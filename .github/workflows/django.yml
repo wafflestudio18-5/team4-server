@@ -1,0 +1,45 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [ 3.8 ]
+
+    services:
+      postgres:
+        image: postgres:12.5
+        env:
+          POSTGRES_USER: wafflow
+          POSTGRES_PASSWORD: wafflow-backend
+          POSTGRES_DB: wafflow
+        ports:
+          - 5432/tcp
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Verify Postgresql connection
+        run: |
+          psql --version
+          psql -u wafflow -d wafflow -c alter role wafflow createdb
+      - name: Run Tests
+        working-directory: ./wafflow
+        run: |
+          DEBUG=TRUE python manage.py test
