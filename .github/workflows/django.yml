@@ -18,11 +18,11 @@ jobs:
       postgres:
         image: postgres:12.5
         env:
-          POSTGRES_USER: wafflow
-          POSTGRES_PASSWORD: wafflow-backend
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: wafflow
         ports:
-          - 5432/tcp
+          - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
@@ -38,7 +38,6 @@ jobs:
       - name: Verify Postgresql connection
         run: |
           psql --version
-          psql -U wafflow -d wafflow -c "alter role wafflow createdb"
       - name: Run Tests
         working-directory: ./wafflow
         run: |
