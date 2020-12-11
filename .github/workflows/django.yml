@@ -38,7 +38,7 @@ jobs:
       - name: Verify Postgresql connection
         run: |
           psql --version
-          psql -u wafflow -d wafflow -c alter role wafflow createdb
+          psql -U wafflow -d wafflow -c "alter role wafflow createdb"
       - name: Run Tests
         working-directory: ./wafflow
         run: |
