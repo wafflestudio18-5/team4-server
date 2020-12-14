@@ -29,3 +29,4 @@ class UserAnswer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, related_name="user_answers", on_delete=models.CASCADE)
     answer = models.ForeignKey(Answer, related_name="user_answers", on_delete=models.CASCADE)
+
