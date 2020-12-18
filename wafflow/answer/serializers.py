@@ -3,6 +3,8 @@ from answer.models import Answer, UserAnswer
 
 
 class SimpleAnswerSerializer(serializers.ModelSerializer):
+    rating = serializers.SerializerMethodField()
+
     class Meta:
         model = Answer
         fields = (
@@ -13,6 +15,9 @@ class SimpleAnswerSerializer(serializers.ModelSerializer):
             "is_accepted"
         )
 
+    def get_rating(self,answer):
+
+
 
 class AnswerSummarySerializer(SimpleAnswerSerializer):
     title = serializers.CharField(source="question.title", read_only=True)
@@ -22,5 +27,10 @@ class AnswerSummarySerializer(SimpleAnswerSerializer):
 
 
 class AnswerInfoSerializer(SimpleAnswerSerializer):
-    # need to be implemented
-    pass
+
+    class Meta:
+        fields = SimpleAnswerSerializer.Meta.fields + (
+            "vote",
+            "content",
+            "comment_count"
+        )

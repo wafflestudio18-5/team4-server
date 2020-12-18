@@ -33,7 +33,7 @@ class AnswerUserViewSet(viewsets.GenericViewSet):
         answers_all = Answer.objects.filter(user=user)
         # should be implemented
         if sorted_by == VOTE:
-            answers_all.order_by()
+            answers_all.order_by("-vote")
         elif sorted_by == ACTIVITY:
             answers_all.order_by("-updated_at")
         elif sorted_by == NEWEST:
@@ -79,7 +79,7 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
         answers_all = Answer.objects.filter(question=question)
         # should be implemented
         if sorted_by == VOTE:
-            answers_all.order_by()
+            answers_all.order_by("-vote")
         elif sorted_by == ACTIVITY:
             answers_all.order_by("-updated_at")
         elif sorted_by == OLDEST:
@@ -99,7 +99,13 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
         })
 
     def make(self, request, pk=None):
-        pass
+        try:
+            question = Question.objects.get(pk=pk)
+        except Question.DoesNotExist:
+            return Response({"message": "There is no question with the given id"},
+                            status=status.HTTP_404_NOT_FOUND)
+        data = request.data
+        serializer = self.get_serializer()
 
 
 class AnswerViewSet(viewsets.GenericViewSet):
@@ -139,6 +145,9 @@ class AnswerViewSet(viewsets.GenericViewSet):
         except Answer.DoesNotExist:
             return Response({"message": "There is no answer with the given ID"},
                             status=status.HTTP_404_NOT_FOUND)
+        if not answer.is_active:
+            return Response({"message": "Validation Error: already deleted"},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(answer, {"is_active": False}, partial=True)
         serializer.is_valid()
