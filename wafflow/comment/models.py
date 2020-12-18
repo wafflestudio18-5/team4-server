@@ -18,7 +18,7 @@ class Comment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, related_name="comments", on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, related_name="commments", on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, related_name="comments", on_delete=models.CASCADE)
     answer = models.ForeignKey(Answer, related_name="comments", on_delete=models.CASCADE)
     vote = models.IntegerField(default=0)
 
