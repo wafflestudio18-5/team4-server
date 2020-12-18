@@ -1,6 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
-from wafflow.answer.views import AnswerUserViewSet, AnswerQuestionViewSet, AnswerViewSet
+from answer.views import AnswerUserViewSet, AnswerQuestionViewSet, AnswerViewSet
 
 app_name = "answer"
 
@@ -11,9 +11,9 @@ answer_question_detail = AnswerQuestionViewSet.as_view({
 })
 
 router.register("answer", AnswerViewSet, basename="answer")
-router.register("answer/question/<int:pk>", answer_question_detail, basename="answer_question")
 router.register("answer/user", AnswerUserViewSet, basename="answer_user")
 
 urlpatterns = [
     path('', include(router.urls)),
+    path("answer/question/<int:pk>", answer_question_detail)
 ]

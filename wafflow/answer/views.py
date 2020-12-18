@@ -6,10 +6,10 @@ from django.shortcuts import redirect
 from django.core.paginator import Paginator
 
 from django.contrib.auth.models import User
-from wafflow.question.models import Question
-from wafflow.answer.models import Answer
-from wafflow.answer.constants import *
-from wafflow.answer.serializers import AnswerSummarySerializer, AnswerInfoSerializer
+from question.models import Question
+from answer.models import Answer
+from answer.constants import *
+from answer.serializers import AnswerSummarySerializer, AnswerInfoSerializer
 
 
 class AnswerUserViewSet(viewsets.GenericViewSet):
@@ -31,7 +31,6 @@ class AnswerUserViewSet(viewsets.GenericViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         answers_all = Answer.objects.filter(user=user)
-        # should be implemented
         if sorted_by == VOTE:
             answers_all.order_by("-vote")
         elif sorted_by == ACTIVITY:
@@ -77,7 +76,6 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
         answers_all = Answer.objects.filter(question=question)
-        # should be implemented
         if sorted_by == VOTE:
             answers_all.order_by("-vote")
         elif sorted_by == ACTIVITY:

@@ -13,6 +13,7 @@ class Question(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     vote = models.IntegerField(default=0)
 
+
 class UserQuestion(models.Model):
     INCREMENT = 1
     DECREMENT = -1

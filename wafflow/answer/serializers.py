@@ -2,21 +2,19 @@ from rest_framework import serializers
 from answer.models import Answer, UserAnswer
 
 
-class SimpleAnswerSerializer(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField()
+# from user.serializers import SimpleUserSerializer
 
+
+class SimpleAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = (
             "id",
             "created_at",
             "updated_at",
-            "rating",
+            "vote",
             "is_accepted"
         )
-
-    def get_rating(self,answer):
-
 
 
 class AnswerSummarySerializer(SimpleAnswerSerializer):
@@ -27,10 +25,35 @@ class AnswerSummarySerializer(SimpleAnswerSerializer):
 
 
 class AnswerInfoSerializer(SimpleAnswerSerializer):
+    rating = serializers.SerializerMethodField()
+    author = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
 
     class Meta:
         fields = SimpleAnswerSerializer.Meta.fields + (
-            "vote",
             "content",
-            "comment_count"
+            "comment_count",
+            "rating"
         )
+
+    def get_rating(self, answer):
+        user = self.context['request'].user
+        if user is None:
+            return 0
+        try:
+            user_answer = answer.user_answers.objects.get(user=user)
+        except UserAnswer.DoesNotExist:
+            return 0
+        return user_answer.rating
+
+    def get_author(self, answer):
+        user = answer.user
+        return {
+            "id": user.id,
+            "username": user.username,
+            "reputation": user.profile.reputation
+        }
+        # return SimpleUserSerializer(user).data
+
+    def get_comment_count(self, answer):
+        return answer.comments.filter(is_active=True).count()

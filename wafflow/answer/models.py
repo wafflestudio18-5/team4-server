@@ -13,6 +13,7 @@ class Answer(models.Model):
     user = models.ForeignKey(User, related_name="answers", on_delete=models.CASCADE)
     vote = models.IntegerField(default=0)
 
+
 class UserAnswer(models.Model):
     INCREMENT = 1
     DECREMENT = -1
@@ -29,4 +30,3 @@ class UserAnswer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(User, related_name="user_answers", on_delete=models.CASCADE)
     answer = models.ForeignKey(Answer, related_name="user_answers", on_delete=models.CASCADE)
-
