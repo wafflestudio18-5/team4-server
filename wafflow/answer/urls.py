@@ -15,5 +15,5 @@ router.register("answer/user", AnswerUserViewSet, basename="answer_user")
 
 urlpatterns = [
     path('', include(router.urls)),
-    path("answer/question/<int:pk>", answer_question_detail)
+    path("answer/question/<int:pk>/", answer_question_detail)
 ]
