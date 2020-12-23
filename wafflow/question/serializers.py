@@ -86,7 +86,7 @@ class QuestionProduceSerializer(serializers.ModelSerializer):
 class QuestionEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ("content",)
+        fields = ("title", "content",)
 
 
 class QuestionTagSerializer(serializers.ModelSerializer):

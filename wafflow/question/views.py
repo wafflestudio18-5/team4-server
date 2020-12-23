@@ -65,3 +65,21 @@ class QuestionViewSet(viewsets.GenericViewSet):
         question.view_count += 1
         question.save()
         return Response(self.get_serializer(question).data)
+
+    def update(self, request, pk=None):
+        """Question 수정 API"""
+        user = request.user
+        question = self.get_object()
+        if not question.user == user:
+            return Response({'error': "작성자만 Question을 수정할 수 있습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        data = request.data.copy()
+        title = data.get("title")
+        content = data.get("content")
+        if not title or not content:
+            return Response({'error': "제목과 본문은 필수적으로 입력해야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = self.get_serializer(question, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return Response(QuestionSerializer(question, context=self.get_serializer_context()).data)
