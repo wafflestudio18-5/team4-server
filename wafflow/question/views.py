@@ -49,6 +49,9 @@ class QuestionViewSet(viewsets.GenericViewSet):
                     else:
                         tag = Tag.objects.get(name=tag)
                     QuestionTag.objects.create(question=question, tag=tag)
+            user_profile = user.profile
+            user_profile.reputation += 40
+            user_profile.save()
         return Response(
             QuestionSerializer(question, context=self.get_serializer_context()).data,
             status=status.HTTP_201_CREATED
