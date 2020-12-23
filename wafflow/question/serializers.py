@@ -1,60 +1,104 @@
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import serializers
 
-from user.models import User, UserProfile
-from question.models import Question, UserQuestion, Tag, QuestionTag
+from question.models import Question, Tag, UserQuestion
 
 
-class QuestionSerializer(serializers.ModelSerializer):
-    # user = serializers.SerializerMethodField()
-    # question = serializers.SerializerMethodField()
-    # bookmarked = serializers.BooleanField(source='bookmark')
-    # author = serializers.CharField(source='user')
-    # tags = serializers.CharField(source='tag')
+class SimpleQuestionSerializer(serializers.ModelSerializer):
+    view_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Question
         fields = (
             'id',
-            'title',
-            'content',
-            'vote',
             'view_count',
+            'title',
+            'vote',
             'has_accepted',
-            # 'bookmarked',
             'created_at',
             'updated_at',
-            # 'author',
-            # 'tags',
         )
 
-        # def get_author(self, question):
-        #     author_questions = question.user_questions.all().selected_related('author')
-        #     return AuthorOfQuestionSerializer(author_questions).data
 
-        # def get_tags(self, question):
-        #     return TagSerializer(question.question_tags, many=True).data
+class QuestionSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+    bookmarked = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
+
+    class Meta(SimpleQuestionSerializer.Meta):
+        fields = SimpleQuestionSerializer.Meta.fields + (
+            'author',
+            'bookmarked',
+            'comment_count',
+            'content',
+            'rating',
+            'tags',
+        )
+
+    def get_author(self, question):
+        user = question.user
+        return {
+            "id": user.id,
+            "username": user.username,
+            # "reputation": user.profile.reputation,
+        }
+
+    def get_bookmarked(self, question):
+        user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            return False
+        try:
+            user_question = question.user_questions.get(user=user)
+        except UserQuestion.DoesNotExist:
+            return False
+        return user_question.bookmark
+
+    def get_comment_count(self, question):
+        return question.comments.filter(is_active=True).count()
+
+    def get_rating(self, question):
+        user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            return 0
+        try:
+            user_question = question.user_questions.get(user=user)
+        except UserQuestion.DoesNotExist:
+            return 0
+        return user_question.rating
+
+    def get_tags(self, question):
+        return QuestionTagSerializer(question.question_tags, many=True).data
 
 
-class AuthorOfQuestionSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(source='user.id')
-    username = serializers.CharField(source='user.username')
-    reputation = serializers.IntegerField(source='user.profile.reputation')
+class QuestionProduceSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = UserQuestion
-        fields = (
-            'id',
-            'username',
-            'reputation',
-        )
+        model = Question
+        fields = ('title', 'content',)
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        return Question.objects.create(**validated_data, user=user)
 
 
-class TagSerializer(serializers.ModelSerializer):
+class QuestionEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = ("content",)
+
+
+class QuestionTagSerializer(serializers.ModelSerializer):
+    id = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
 
     class Meta:
         model = Tag
-        fields = (
-            'id',
-            'name',
-        )
+        fields = ('id', 'name',)
 
+    def get_id(self, question_tags):
+        return question_tags.tag_id
+
+    def get_name(self, question_tags):
+        return Tag.objects.get(id=question_tags.tag_id).name
