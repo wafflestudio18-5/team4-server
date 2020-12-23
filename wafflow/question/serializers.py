@@ -20,21 +20,43 @@ class SimpleQuestionSerializer(serializers.ModelSerializer):
         )
 
 
-class QuestionSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
-    bookmarked = serializers.SerializerMethodField()
+class QuestionUserSerializer(serializers.ModelSerializer):
+    answer_count = serializers.SerializerMethodField()
+    bookmark_count = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
-    rating = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
 
     class Meta(SimpleQuestionSerializer.Meta):
         fields = SimpleQuestionSerializer.Meta.fields + (
+            'answer_count',
+            'bookmark_count',
+            'comment_count',
+            'tags',
+        )
+
+    def get_answer_count(self, question):
+        return question.answers.filter(is_active=True).count()
+
+    def get_bookmark_count(self, question):
+        return question.user_questions.filter(bookmark=True).count()
+
+    def get_comment_count(self, question):
+        return question.comments.filter(is_active=True).count()
+
+    def get_tags(self, question):
+        return QuestionTagSerializer(question.question_tags, many=True).data
+
+
+class QuestionSerializer(QuestionUserSerializer):
+    author = serializers.SerializerMethodField()
+    bookmarked = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+
+    class Meta(QuestionUserSerializer.Meta):
+        fields = QuestionUserSerializer.Meta.fields + (
             'author',
             'bookmarked',
-            'comment_count',
-            'content',
             'rating',
-            'tags',
         )
 
     def get_author(self, question):
@@ -55,9 +77,6 @@ class QuestionSerializer(serializers.ModelSerializer):
             return False
         return user_question.bookmark
 
-    def get_comment_count(self, question):
-        return question.comments.filter(is_active=True).count()
-
     def get_rating(self, question):
         user = self.context['request'].user
         if isinstance(user, AnonymousUser):
@@ -67,9 +86,6 @@ class QuestionSerializer(serializers.ModelSerializer):
         except UserQuestion.DoesNotExist:
             return 0
         return user_question.rating
-
-    def get_tags(self, question):
-        return QuestionTagSerializer(question.question_tags, many=True).data
 
 
 class QuestionProduceSerializer(serializers.ModelSerializer):
@@ -102,3 +118,4 @@ class QuestionTagSerializer(serializers.ModelSerializer):
 
     def get_name(self, question_tags):
         return Tag.objects.get(id=question_tags.tag_id).name
+
