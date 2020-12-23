@@ -11,7 +11,7 @@ from user.models import UserProfile
 import json
 
 
-class AnswerTestCase(TestCase):
+class UserQuestionTestSetting(TestCase):
     def set_up_user_question(self):
         eldpswp99 = User.objects.create_user(
             username="eldpswp99", email="nrg1392@naver.com", password="password"
@@ -53,7 +53,7 @@ class AnswerTestCase(TestCase):
         self.assertEqual(UserAnswer.objects.all().count(), user_answer_count)
 
 
-class GetAnswerInfoTestCase(AnswerTestCase):
+class GetAnswerInfoTestCase(UserQuestionTestSetting):
     def assert_in_answer_info(self, data):
         self.assertIn("id", data)
         self.assertIn("created_at", data)
@@ -70,7 +70,7 @@ class GetAnswerInfoTestCase(AnswerTestCase):
         self.assertIn("reputation", author)
 
 
-class MultipleAnswerSetUp(AnswerTestCase):
+class MultipleAnswerSetUp(UserQuestionTestSetting):
     def setUp(self):
         self.set_up_user_question()
         eldpswp99 = User.objects.get(username="eldpswp99")
@@ -767,7 +767,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         )
 
 
-class PostPutAnswerTestCase(AnswerTestCase):
+class PostPutAnswerTestCase(UserQuestionTestSetting):
     def assert_in_answer_info(self, data):
         self.assertIn("id", data)
         self.assertIn("created_at", data)
@@ -1018,7 +1018,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         self.check_db_count()
 
 
-class DeleteAnswerTestCase(AnswerTestCase):
+class DeleteAnswerTestCase(UserQuestionTestSetting):
     client = Client()
 
     def check_db_count(self, **kwargs):
@@ -1117,7 +1117,7 @@ class DeleteAnswerTestCase(AnswerTestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-class AnswerAcceptionTestCase(AnswerTestCase):
+class AnswerAcceptionTestCase(UserQuestionTestSetting):
     def assert_in_data(self, data):
         self.assertIn("question_id", data)
         self.assertIn("has_accepted", data)
