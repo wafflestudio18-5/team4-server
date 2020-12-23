@@ -46,7 +46,7 @@ class UserViewSet(viewsets.GenericViewSet):
         password = request.data.get('password')
 
         user = authenticate(request, username=username, password=password)
-        if user:
+        if user and user.is_active == True:
             login(request, user)
 
             data = get_serializer_class(user.profile).data
@@ -93,6 +93,7 @@ class UserViewSet(viewsets.GenericViewSet):
         user = request.user
         if user.is_active == True:
             user.is_active = False
+            logout(request)
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_204_NO_CONTENT)
