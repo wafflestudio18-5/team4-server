@@ -73,7 +73,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     last_login = serializers.DateTimeField(read_only=True, source='user.last_login')
     nickname = serializers.CharField()
     picture = serializers.CharField()
-    reputation = serializers.SerializerMethodField()
+    reputation = serializers.CharField()
 
     class Meta:
         model = UserProfile
@@ -88,9 +88,3 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'picture',
             'reputation',
         )
-
-    def get_reputation(self, userprofile):
-        # 채택된 답변 +15/ 답변 upvote 10, downvote -2/ downvote한 유저도 -1/ question upvote +5, downvote-1, accept하면 +2
-        # to be updated
-        reputation_score = 0
-        return reputation_score
