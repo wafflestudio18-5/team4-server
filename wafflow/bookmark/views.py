@@ -8,7 +8,7 @@ from bookmark.serializers import SimpleBookmarkSerializer
 
 class BookmarkViewSet(viewsets.GenericViewSet):
     queryset = UserQuestion.objects.all()
-    permission_classes = IsAuthenticated
+    permission_classes = (IsAuthenticated,)
     serializer_class = SimpleBookmarkSerializer
 
     def make(self, request, pk=None):
@@ -21,7 +21,7 @@ class BookmarkViewSet(viewsets.GenericViewSet):
             )
 
         user = request.user
-        user_question = UserQuestion.objects.get_or_create(
+        user_question, created = UserQuestion.objects.get_or_create(
             user=user, question=question, defaults={"rating": 0}
         )
 
@@ -46,13 +46,14 @@ class BookmarkViewSet(viewsets.GenericViewSet):
             )
 
         user = request.user
-        user_question = UserQuestion.objects.get_or_create(
+        user_question, created = UserQuestion.objects.get_or_create(
             user=user, question=question, defaults={"rating": 0}
         )
 
         if not user_question.bookmark:
             return Response(
-                self.get_serializer(user_question), status=status.HTTP_204_NO_CONTENT
+                self.get_serializer(user_question).data,
+                status=status.HTTP_204_NO_CONTENT,
             )
 
         user_question.bookmark = False

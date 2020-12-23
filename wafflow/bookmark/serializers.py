@@ -9,8 +9,8 @@ class SimpleBookmarkSerializer(serializers.ModelSerializer):
     bookmarked = serializers.BooleanField(source="bookmark", read_only=True)
 
     class Meta:
-        Model = UserQuestion
-        fields = "user_id" "question_id" "bookmark_count" "bookmarked"
+        model = UserQuestion
+        fields = ("user_id", "question_id", "bookmark_count", "bookmarked")
 
     def get_bookmark_count(self, user_question):
         question = user_question.question
