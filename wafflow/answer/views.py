@@ -242,6 +242,10 @@ class AnswerViewSet(viewsets.GenericViewSet):
         question.has_accepted = is_accepted
         question.save()
 
+        user_profile = answer.user.profile
+        user_profile.reputation += 15 * (1 if is_accepted else -1)
+        user_profile.save()
+
     def post_acception(self, request, answer):
         if answer.question.has_accepted:
             return Response(
