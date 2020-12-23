@@ -1209,6 +1209,8 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["has_accepted"], True)
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], True)
+        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(eldpswp99_profile.reputation, 15)
 
         response = self.client.post(
             f"/answer/{answer.id}/acception/",
@@ -1216,8 +1218,32 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(eldpswp99_profile.reputation, 15)
 
         self.check_db_count()
+
+    def test_post_answer_answer_id_acception(self):
+        answer = Answer.objects.get(content="0")
+        eldpswp99_profile = answer.user.profile
+        eldpswp99_profile.reputation = 123
+        eldpswp99_profile.save()
+        question = answer.question
+
+        response = self.client.post(
+            f"/answer/{answer.id}/acception/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["question_id"], question.id)
+        self.assertEqual(data["has_accepted"], True)
+        self.assertEqual(data["answer_id"], answer.id)
+        self.assertEqual(data["is_accepted"], True)
+        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(eldpswp99_profile.reputation, 138)
 
 
 class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
@@ -1231,6 +1257,9 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
         question.has_accepted = True
         question.save()
+        user_profile = answer.user.profile
+        user_profile.reputation += 15
+        user_profile.save()
 
     def test_delete_answer_answer_id_accpetion_invalid_token(self):
         answer = Answer.objects.get(content="0")
@@ -1294,6 +1323,9 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], False)
 
+        user_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(user_profile.reputation, 0)
+
         response = self.client.delete(
             f"/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
@@ -1301,4 +1333,29 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+        user_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(user_profile.reputation, 0)
         self.check_db_count()
+
+    def test_delete_answer_answer_id_acception(self):
+        answer = Answer.objects.get(content="0")
+        question = answer.question
+        user_profile = answer.user.profile
+        user_profile.reputation = 123
+        user_profile.save()
+
+        response = self.client.delete(
+            f"/answer/{answer.id}/acception/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["question_id"], question.id)
+        self.assertEqual(data["has_accepted"], False)
+        self.assertEqual(data["answer_id"], answer.id)
+        self.assertEqual(data["is_accepted"], False)
+
+        user_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(user_profile.reputation, 108)
