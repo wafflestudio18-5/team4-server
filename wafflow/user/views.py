@@ -19,6 +19,11 @@ class UserViewSet(viewsets.GenericViewSet):
         if self.action in ('create', 'login'):
             return (AllowAny(), )
         return self.permission_classes
+    
+    def get_serializer_class(self):
+        if self.action == ('create', 'update'):
+            return UserProfileSerializer
+        return self.serializer_class
 
     # POST /user
     def create(self, request):
@@ -44,7 +49,7 @@ class UserViewSet(viewsets.GenericViewSet):
         if user:
             login(request, user)
 
-            data = UserProfileSerializer(user.profile).data
+            data = get_serializer_class(user.profile).data
             token, created = Token.objects.get_or_create(user=user)
             data['token'] = token.key
             return Response(data)
@@ -56,4 +61,40 @@ class UserViewSet(viewsets.GenericViewSet):
     def logout(self, request):
         logout(request)
         return Response()
+
+    # GET /user/me, /user/{user_id}
+    def retrieve(self, request, pk=None):
+        user = request.user if pk == 'me' else self.get_object()
+        return Response(self.get_serializer(user).data)
+
+    # PUT /user/me
+    def update(self, request, pk=None):
+        if pk != 'me':
+            return Response({"message": "Not allowed to edit user not me"}, status=status.HTTP_403_FORBIDDEN)
+
+        user = request.user
+        data = request.data
+        
+        serializer = self.get_serializer(user, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(user, serializer.validated_data)
+
+        serializer = UserProfileSerializer(user.profile, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.data
+
+        return Response(data, status=status.HTTP_200_OK)
+    
+    # DELETE /user/me
+    def destroy(self, request, pk=None):
+        if pk != 'me':
+            return Response({"message": "Not allowed to edit user not me or this user"}, status=status.HTTP_403_FORBIDDEN)
+
+        user = request.user
+        if user.is_active == True:
+            user.is_active = False
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        
         

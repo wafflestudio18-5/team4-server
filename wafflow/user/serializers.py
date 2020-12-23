@@ -10,6 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(allow_blank=False)
     last_login = serializers.DateTimeField(read_only=True)
     nickname = serializers.CharField(allow_blank=False, write_only=True)
+    picture = serializers.CharField(allow_blank=True, write_only=True)
 
     class Meta:
         model = User
@@ -20,29 +21,49 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'last_login',
             'nickname',
+            'picture',
         )
 
     def validate(self, data):
-        email = data.get('email')
-        username = data.get('username')
-        nickname = data.get('nickname')
+        return data
+
+    @transaction.atomic
+    def create(self, validated_data):
+        email = validated_data.get('email')
+        username = validated_data.get('username')
+        nickname = validated_data.get('nickname')
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("Email already exists")
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError("Username already exists")
         if UserProfile.objects.filter(nickname=nickname).exists():
             raise serializers.ValidationError("Nickname already exists")
-        return data
 
-    @transaction.atomic
-    def create(self, validated_data):
         nickname = validated_data.pop('nickname')
+        picture = validated_data.pop('picture')
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
+        user.is_active = True
 
-        UserProfile.objects.create(user=user, nickname=nickname)
+        UserProfile.objects.create(user=user, nickname=nickname, picture=picture)
         return user
+
+    @transaction.atomic
+    def update(self, user, validated_data):
+        password = validated_data.get('password')
+        user.password = password
+        user.save()
+
+        userprofile = user.profile
+        nickname = validated_data.pop('nickname')
+        picture = validated_data.pop('picture')
+        userprofile.nickname = nickname
+        userprofile.picture = picture
+        userprofile.save()
+
+        return super(UserSerializer, self).update(user, validated_data)
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username')
@@ -50,9 +71,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
     updated_at = serializers.DateTimeField(read_only=True)
     email = serializers.EmailField(source='user.email')
     last_login = serializers.DateTimeField(read_only=True, source='user.last_login')
-    nickname = serializers.CharField(allow_blank=False)
-    picture = serializers.CharField(required=False)
-    reputation = serializers.IntegerField(required=False)
+    nickname = serializers.CharField()
+    picture = serializers.CharField()
+    reputation = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -67,3 +88,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'picture',
             'reputation',
         )
+
+    def get_reputation(self, userprofile):
+        # 채택된 답변 +15/ 답변 upvote 10, downvote -2/ downvote한 유저도 -1/ question upvote +5, downvote-1, accept하면 +2
+        # to be updated
+        reputation_score = 0
+        return reputation_score
