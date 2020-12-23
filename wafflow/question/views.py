@@ -52,3 +52,16 @@ class QuestionViewSet(viewsets.GenericViewSet):
             QuestionSerializer(question, context=self.get_serializer_context()).data,
             status=status.HTTP_201_CREATED
         )
+
+    def retrieve(self, request, pk=None):
+        """단일 Question 조회 API"""
+        try:
+            question = Question.objects.get(pk=pk)
+        except Question.DoesNotExist:
+            return Response(
+                {"message": "There is no question with the given ID"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        question.view_count += 1
+        question.save()
+        return Response(self.get_serializer(question).data)
