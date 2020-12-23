@@ -7,7 +7,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from user.serializers import UserSerializer, UserProfileSerializer
+
 from user.models import UserProfile
+from question.models import UserQuestion
+from answer.models import UserAnswer
 
 
 class UserViewSet(viewsets.GenericViewSet):
@@ -22,8 +25,8 @@ class UserViewSet(viewsets.GenericViewSet):
     
     def get_serializer_class(self):
         if self.action == ('create', 'update'):
-            return UserProfileSerializer
-        return self.serializer_class
+            return self.serializer_class
+        return UserProfileSerializer
 
     # POST /user
     def create(self, request):
@@ -49,7 +52,7 @@ class UserViewSet(viewsets.GenericViewSet):
         if user and user.is_active == True:
             login(request, user)
 
-            data = get_serializer_class(user.profile).data
+            data = get_serializer(user.profile).data
             token, created = Token.objects.get_or_create(user=user)
             data['token'] = token.key
             return Response(data)
@@ -64,8 +67,15 @@ class UserViewSet(viewsets.GenericViewSet):
 
     # GET /user/me, /user/{user_id}
     def retrieve(self, request, pk=None):
-        user = request.user if pk == 'me' else self.get_object()
-        return Response(self.get_serializer(user).data)
+        if pk == 'me':
+            user = request.user  
+            data = self.get_serializer(user.profile).data
+            data["answer_count"] = user.user_answers.count()
+            data["bookmark_count"] = user.user_questions.filter(bookmark=True).count()
+            return Response(data)
+        else:
+            user = self.get_object()
+            return Response(self.get_serializer(user.profile).data)
 
     # PUT /user/me
     def update(self, request, pk=None):
