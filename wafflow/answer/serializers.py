@@ -9,13 +9,7 @@ from question.models import Question
 class SimpleAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = (
-            "id",
-            "created_at",
-            "updated_at",
-            "vote",
-            "is_accepted"
-        )
+        fields = ("id", "created_at", "updated_at", "vote", "is_accepted")
 
 
 class AnswerSummarySerializer(SimpleAnswerSerializer):
@@ -35,11 +29,11 @@ class AnswerInfoSerializer(SimpleAnswerSerializer):
             "content",
             "comment_count",
             "rating",
-            "author"
+            "author",
         )
 
     def get_rating(self, answer):
-        user = self.context['request'].user
+        user = self.context["request"].user
         if isinstance(user, AnonymousUser):
             return 0
         try:
@@ -53,7 +47,7 @@ class AnswerInfoSerializer(SimpleAnswerSerializer):
         return {
             "id": user.id,
             "username": user.username,
-            "reputation": user.profile.reputation
+            "reputation": user.profile.reputation,
         }
         # return SimpleUserSerializer(user).data
 
@@ -66,32 +60,25 @@ class AnswerProduceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Answer
-        fields = (
-            "content",
-            "question_id"
-        )
+        fields = ("content", "question_id")
 
     def create(self, validated_data):
         user = self.context["request"].user
-        question = Question.objects.get(pk=validated_data.pop('question_id'))
-        return Answer.objects.create(
-            **validated_data,
-            user=user,
-            question=question
-        )
+        question = Question.objects.get(pk=validated_data.pop("question_id"))
+        return Answer.objects.create(**validated_data, user=user, question=question)
 
 
 class AnswerEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = (
-            "content",
-        )
+        fields = ("content",)
 
 
 class AnswerAcceptionSerializer(serializers.ModelSerializer):
     question_id = serializers.IntegerField(source="question.id", read_only=True)
-    has_accepted = serializers.BooleanField(source="question.has_accepted", read_only=True)
+    has_accepted = serializers.BooleanField(
+        source="question.has_accepted", read_only=True
+    )
     answer_id = serializers.IntegerField(source="id", read_only=True)
 
     class Meta:

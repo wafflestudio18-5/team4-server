@@ -14,9 +14,7 @@ import json
 class AnswerTestCase(TestCase):
     def set_up_user_question(self):
         eldpswp99 = User.objects.create_user(
-            username="eldpswp99",
-            email="nrg1392@naver.com",
-            password="password"
+            username="eldpswp99", email="nrg1392@naver.com", password="password"
         )
         eldpswp99_profile = UserProfile.objects.create(
             user=eldpswp99,
@@ -24,17 +22,12 @@ class AnswerTestCase(TestCase):
             intro="Hello World!",
         )
         Token.objects.create(user=eldpswp99)
-        self.eldpswp99_token = 'Token ' + Token.objects.get(user=eldpswp99).key
+        self.eldpswp99_token = "Token " + Token.objects.get(user=eldpswp99).key
         qwerty = User.objects.create_user(
-            username="qwerty",
-            email="nrg1392@naver.com",
-            password="password"
+            username="qwerty", email="nrg1392@naver.com", password="password"
         )
         qwerty_profile = UserProfile.objects.create(
-            user=qwerty,
-            nickname="example",
-            intro="1q2w3e4r",
-            reputation=1234
+            user=qwerty, nickname="example", intro="1q2w3e4r", reputation=1234
         )
         Token.objects.create(user=qwerty)
         question = Question.objects.create(
@@ -42,7 +35,7 @@ class AnswerTestCase(TestCase):
             title="Hello",
             content="World",
         )
-        self.qwerty_token = 'Token ' + Token.objects.get(user=qwerty).key
+        self.qwerty_token = "Token " + Token.objects.get(user=qwerty).key
 
     def check_db_count(self, **kwargs):
         answer_count = kwargs.get("answer_count", 0)
@@ -87,20 +80,20 @@ class MultipleAnswerSetUp(AnswerTestCase):
         self.WHOLE_ANSWER_COUNT = 46
         self.ANSWER_COUNT = 45
         self.ANSWER_PER_PAGE = 30
-        for answer in range(self.ANSWER_COUNT):
+        for loop_count in range(self.ANSWER_COUNT):
             Answer.objects.create(
-                content=str(answer + 1),
+                content=str(loop_count + 1),
                 question=question,
                 user=eldpswp99,
-                vote=answer + 1
+                vote=loop_count + 1,
             )
 
         Answer.objects.create(
             content=str(1),
             question=question,
             user=eldpswp99,
-            vote=answer + 1,
-            is_active=False
+            vote=self.ANSWER_COUNT + 1,
+            is_active=False,
         )
 
     def check_db_count(self, **kwargs):
@@ -117,7 +110,7 @@ class MultipleAnswerSetUp(AnswerTestCase):
             user_count=user_count,
             user_profile_count=user_profile_count,
             comment_count=comment_count,
-            user_answer_count=user_answer_count
+            user_answer_count=user_answer_count,
         )
 
 
@@ -139,7 +132,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
             user_count=user_count,
             user_profile_count=user_profile_count,
             comment_count=comment_count,
-            user_answer_count=user_answer_count
+            user_answer_count=user_answer_count,
         )
 
     def setUp(self):
@@ -148,24 +141,20 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         qwerty = User.objects.get(username="qwerty")
 
         question = Question.objects.get(title="Hello")
-        for answer in range(self.ANSWER_COUNT):
+        for loop_count in range(self.ANSWER_COUNT):
             Answer.objects.create(
-                user=eldpswp99,
-                question=question,
-                content=str(answer + 1)
+                user=eldpswp99, question=question, content=str(loop_count + 1)
             )
-        for answer in range(self.ANSWER_COUNT):
+        for loop_count in range(self.ANSWER_COUNT):
             Answer.objects.create(
-                user=qwerty,
-                question=question,
-                content="b" * (answer + 1)
+                user=qwerty, question=question, content="b" * (loop_count + 1)
             )
 
         comment = Comment.objects.create(
             user=eldpswp99,
             type=Comment.ANSWER,
             answer=Answer.objects.get(content="1"),
-            content="content"
+            content="content",
         )
 
     def test_get_answer_answer_id(self):
@@ -173,9 +162,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         answer.is_accepted = True
         answer.save()
 
-        response = self.client.get(
-            f'/answer/{answer.id}/'
-        )
+        response = self.client.get(f"/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -195,14 +182,10 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         self.check_db_count()
 
     def test_get_answer_answer_id_wrong_request(self):
-        response = self.client.get(
-            f'/answer/-1/'
-        )
+        response = self.client.get(f"/answer/-1/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        response = self.client.get(
-            f'/answer/99999/'
-        )
+        response = self.client.get(f"/answer/99999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -211,9 +194,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         answer.is_active = False
         answer.save()
 
-        response = self.client.get(
-            f'/answer/{answer.id}/'
-        )
+        response = self.client.get(f"/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -222,17 +203,15 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         user = User.objects.get(username="qwerty")
         COMMENT_COUNT = 3
 
-        for loop in range(COMMENT_COUNT):
+        for loop_count in range(COMMENT_COUNT):
             comment = Comment.objects.create(
                 user=user,
                 type=Comment.ANSWER,
                 answer=answer,
-                content="b" * (loop + 1)
+                content="b" * (loop_count + 1),
             )
 
-        response = self.client.get(
-            f'/answer/{answer.id}/'
-        )
+        response = self.client.get(f"/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -250,9 +229,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         comment.is_active = False
         comment.save()
 
-        response = self.client.get(
-            f'/answer/{answer.id}/'
-        )
+        response = self.client.get(f"/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -264,23 +241,14 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         answer = Answer.objects.get(content="1")
         eldpswp99 = User.objects.get(username="eldpswp99")
         qwerty = User.objects.get(username="qwerty")
-        user_answer = UserAnswer.objects.create(
-            rating=1,
-            answer=answer,
-            user=eldpswp99
-        )
-        user_answer = UserAnswer.objects.create(
-            rating=1,
-            answer=answer,
-            user=qwerty
-        )
+        user_answer = UserAnswer.objects.create(rating=1, answer=answer, user=eldpswp99)
+        user_answer = UserAnswer.objects.create(rating=1, answer=answer, user=qwerty)
 
         answer.vote = 2
         answer.save()
 
         response = self.client.get(
-            f"/answer/{answer.id}/",
-            HTTP_AUTHORIZATION=self.eldpswp99_token
+            f"/answer/{answer.id}/", HTTP_AUTHORIZATION=self.eldpswp99_token
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -317,27 +285,21 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         self.assertIn("is_accepted", data)
 
     def test_get_answer_user_user_id_invalid_id(self):
-        response = self.client.get(
-            f"/answer/user/-1/"
-        )
+        response = self.client.get(f"/answer/user/-1/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def test_get_answer_user_user_id_invalid_sorted_by(self):
         user = User.objects.get(username="eldpswp99")
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=asdf&page={1}/"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=asdf&page={1}/")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
     def test_get_answer_user_user_id_invalid_page(self):
         user = User.objects.get(username="eldpswp99")
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=votes&page=-1"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=-1")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -356,9 +318,7 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         answer.is_accepted = True
         answer.save()
 
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=votes&page=1"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=1")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
 
@@ -372,13 +332,12 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
             self.assert_in_answer_info(answer)
             self.assertEqual(answer["title"], "Hello"),
             self.assertEqual(answer["vote"], vote)
-            self.assertEqual(answer["is_accepted"],
-                             False if vote != ACCEPTED_ANSWER_VOTE else True)
+            self.assertEqual(
+                answer["is_accepted"], False if vote != ACCEPTED_ANSWER_VOTE else True
+            )
             vote -= 1
 
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=votes&page=2"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=2")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
 
@@ -408,9 +367,7 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         answer_change_vote.vote = 100
         answer_change_vote.save()
 
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=activity&page=1"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=activity&page=1")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -430,14 +387,14 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
             else:
                 self.assertEqual(answer["vote"], vote)
                 vote -= 1
-            self.assertEqual(answer["is_accepted"],
-                             False if answer["vote"] != ACCEPTED_VOTE else True)
+            self.assertEqual(
+                answer["is_accepted"],
+                False if answer["vote"] != ACCEPTED_VOTE else True,
+            )
 
             idx += 1
 
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=activity&page=2"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=activity&page=2")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -461,15 +418,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         question = Question.objects.get(title="Hello")
         CREATE_COUNT = 3
         for answer in range(CREATE_COUNT):
-            Answer.objects.create(
-                user=user,
-                question=question,
-                vote=100 + answer
-            )
+            Answer.objects.create(user=user, question=question, vote=100 + answer)
 
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=newest&page=1"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=newest&page=1")
         data = response.json()
         self.assertIsNotNone(data["answers"])
         answers = data["answers"]
@@ -484,15 +435,14 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
                 vote = 45
             self.assertEqual(answer["is_accepted"], False)
 
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=newest&page=2"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=newest&page=2")
 
         data = response.json()
         self.assertIsNotNone(data["answers"])
         answers = data["answers"]
-        self.assertEqual(len(answers),
-                         self.ANSWER_COUNT - self.ANSWER_PER_PAGE + CREATE_COUNT)
+        self.assertEqual(
+            len(answers), self.ANSWER_COUNT - self.ANSWER_PER_PAGE + CREATE_COUNT
+        )
         for answer in answers:
             self.assert_in_answer_info(answer)
             self.assertEqual(answer["title"], "Hello")
@@ -505,9 +455,7 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
     def test_get_answer_user_user_id_no_answer(self):
         user = User.objects.get(username="qwerty")
 
-        response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=votes&page=1"
-        )
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=1")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -522,9 +470,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
     client = Client()
 
     def test_get_answer_question_question_id_invalid_id(self):
-        response = self.client.get(
-            f"/answer/question/{-1}/?sorted_by=votes&page=1"
-        )
+        response = self.client.get(f"/answer/question/{-1}/?sorted_by=votes&page=1")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -554,9 +500,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
     def test_get_answer_question_question_id_no_answer(self):
         qwerty = User.objects.get(username="qwerty")
         question = Question.objects.create(
-            user=qwerty,
-            title="django",
-            content="server"
+            user=qwerty, title="django", content="server"
         )
 
         response = self.client.get(
@@ -580,21 +524,16 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         accepted_answer.is_accepted = True
         accepted_answer.save()
         rating = UserAnswer.objects.create(
-            user=qwerty,
-            answer=accepted_answer,
-            rating=1
+            user=qwerty, answer=accepted_answer, rating=1
         )
         for comment_count in range(3):
             comment = Comment.objects.create(
-                content="good",
-                type=Comment.ANSWER,
-                user=qwerty,
-                answer=accepted_answer
+                content="good", type=Comment.ANSWER, user=qwerty, answer=accepted_answer
             )
 
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=votes&page=1",
-            HTTP_AUTHORIZATION=self.qwerty_token
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         data = response.json()
@@ -619,7 +558,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
 
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=votes&page=2",
-            HTTP_AUTHORIZATION=self.qwerty_token
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         data = response.json()
@@ -659,22 +598,17 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         eldpswp99_profile.save()
         qwerty = User.objects.get(username="qwerty")
         rating = UserAnswer.objects.create(
-            user=qwerty,
-            answer=answer_accepted,
-            rating=1
+            user=qwerty, answer=answer_accepted, rating=1
         )
 
         for comment in range(3):
             Comment.objects.create(
-                user=qwerty,
-                answer=answer_accepted,
-                content="b",
-                type=Comment.ANSWER
+                user=qwerty, answer=answer_accepted, content="b", type=Comment.ANSWER
             )
 
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=activity&page=1",
-            HTTP_AUTHORIZATION=self.qwerty_token
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -707,14 +641,16 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             author = answer["author"]
             self.assertEqual(author["username"], "eldpswp99")
             self.assertEqual(author["reputation"], 123)
-            self.assertEqual(answer["is_accepted"],
-                             False if answer["vote"] != ACCEPTED_VOTE else True)
+            self.assertEqual(
+                answer["is_accepted"],
+                False if answer["vote"] != ACCEPTED_VOTE else True,
+            )
 
             idx += 1
 
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=activity&page=2",
-            HTTP_AUTHORIZATION=self.qwerty_token
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -754,28 +690,18 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         accepted_answer.save()
 
         answer = Answer.objects.create(
-            user=qwerty,
-            question=question,
-            content=str(NEW_VOTE),
-            vote=NEW_VOTE
+            user=qwerty, question=question, content=str(NEW_VOTE), vote=NEW_VOTE
         )
 
         Comment.objects.create(
-            user=qwerty,
-            answer=answer,
-            content="hello",
-            type=Comment.ANSWER
+            user=qwerty, answer=answer, content="hello", type=Comment.ANSWER
         )
 
-        UserAnswer.objects.create(
-            user=qwerty,
-            answer=answer,
-            rating=-1
-        )
+        UserAnswer.objects.create(user=qwerty, answer=answer, rating=-1)
 
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=oldest&page=1",
-            HTTP_AUTHORIZATION=self.qwerty_token
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -802,14 +728,16 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             self.assertEqual(answer["comment_count"], 0)
             self.assertEqual(author["username"], "eldpswp99")
             self.assertEqual(author["reputation"], 0)
-            self.assertEqual(answer["is_accepted"],
-                             False if answer["vote"] != ACCEPTED_VOTE else True)
+            self.assertEqual(
+                answer["is_accepted"],
+                False if answer["vote"] != ACCEPTED_VOTE else True,
+            )
 
             idx += 1
 
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=oldest&page=2",
-            HTTP_AUTHORIZATION=self.qwerty_token
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -826,11 +754,17 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             self.assertEqual(answer["rating"], 0 if vote != NEW_VOTE else -1)
             self.assertEqual(answer["comment_count"], 0 if vote != NEW_VOTE else 1)
             author = answer["author"]
-            self.assertEqual(author["username"], "eldpswp99" if vote != NEW_VOTE else "qwerty")
+            self.assertEqual(
+                author["username"], "eldpswp99" if vote != NEW_VOTE else "qwerty"
+            )
             self.assertEqual(author["reputation"], 0 if vote != NEW_VOTE else 100)
             vote += 1
 
-        self.check_db_count(answer_count=(self.WHOLE_ANSWER_COUNT + 1), comment_count=1, user_answer_count=1)
+        self.check_db_count(
+            answer_count=(self.WHOLE_ANSWER_COUNT + 1),
+            comment_count=1,
+            user_answer_count=1,
+        )
 
 
 class PostPutAnswerTestCase(AnswerTestCase):
@@ -861,21 +795,17 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.post(
             f"/answer/question/{question.id}/",
-            json.dumps({
-                "content": "world"
-            }),
-            content_type="application/json"
+            json.dumps({"content": "world"}),
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.post(
             f"/answer/question/{question.id}/",
-            json.dumps({
-                "content": "world"
-            }),
+            json.dumps({"content": "world"}),
             HTTP_AUTHORIZATION="asdf",
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -884,11 +814,9 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
     def post_answer_question_question_id_invalid_question_id(self):
         response = self.client.post(
             f"/answer/question/-1/",
-            json.dumps({
-                "content": "world"
-            }),
+            json.dumps({"content": "world"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -900,18 +828,16 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         response = self.client.post(
             f"/answer/question/{question.id}",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         response = self.client.post(
             f"/answer/question/{question.id}",
-            json.dumps({
-                "content": ""
-            }),
+            json.dumps({"content": ""}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -922,11 +848,9 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.post(
             f"/answer/question/{question.id}/",
-            json.dumps({
-                "content": "a" * 5001
-            }),
+            json.dumps({"content": "a" * 5001}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -937,11 +861,9 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.post(
             f"/answer/question/{question.id}/",
-            json.dumps({
-                "content": "world"
-            }),
+            json.dumps({"content": "world"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -970,10 +892,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         question = Question.objects.get(title="Hello")
 
         Answer.objects.create(
-            user=eldpswp99,
-            question=question,
-            content="world",
-            vote=2
+            user=eldpswp99, question=question, content="world", vote=2
         )
 
     def test_put_answer_answer_id_invalid_token(self):
@@ -981,21 +900,17 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.put(
             f"/answer/{answer.id}/",
-            json.dumps({
-                "content": "asdf"
-            }),
-            content_type="application/json"
+            json.dumps({"content": "asdf"}),
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.put(
             f"/answer/{answer.id}/",
-            json.dumps({
-                "content": "asdf"
-            }),
+            json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION="asdf",
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -1004,11 +919,9 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
     def test_put_answer_answer_id_invalid_id(self):
         response = self.client.put(
             f"/answer/-1/",
-            json.dumps({
-                "content": "asdf"
-            }),
+            json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -1018,11 +931,9 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.put(
             f"/answer/{answer.id}/",
-            json.dumps({
-                "content": "asdf"
-            }),
+            json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION=self.qwerty_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -1033,11 +944,9 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.put(
             f"/answer/{answer.id}/",
-            json.dumps({
-                "content": "a" * 5001
-            }),
+            json.dumps({"content": "a" * 5001}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1048,10 +957,9 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.put(
             f"/answer/{answer.id}/",
-            json.dumps({
-            }),
+            json.dumps({}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1061,15 +969,13 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(data["content"], "world")
         self.assertEqual(data["vote"], 2)
         self.assertEqual(data["is_accepted"], False)
-        self.assertEqual(data['comment_count'], 0)
+        self.assertEqual(data["comment_count"], 0)
 
         response = self.client.put(
             f"/answer/{answer.id}/",
-            json.dumps({
-                "content": ""
-            }),
+            json.dumps({"content": ""}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1079,7 +985,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(data["content"], "world")
         self.assertEqual(data["vote"], 2)
         self.assertEqual(data["is_accepted"], False)
-        self.assertEqual(data['comment_count'], 0)
+        self.assertEqual(data["comment_count"], 0)
         self.check_db_count()
 
     def test_put_answer_answer_id(self):
@@ -1087,16 +993,18 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
 
         response = self.client.put(
             f"/answer/{answer.id}/",
-            json.dumps({
-                # except content must be ignored
-                "vote": 2,
-                "content": "hello",
-                "is_accepted": True,
-                "is_active": False,
-                "created_at": "3:00"
-            }),
+            json.dumps(
+                {
+                    # except content must be ignored
+                    "vote": 2,
+                    "content": "hello",
+                    "is_accepted": True,
+                    "is_active": False,
+                    "created_at": "3:00",
+                }
+            ),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
-            content_type="application/json"
+            content_type="application/json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1106,7 +1014,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(data["content"], "hello")
         self.assertEqual(data["vote"], 2)
         self.assertEqual(data["is_accepted"], False)
-        self.assertEqual(data['comment_count'], 0)
+        self.assertEqual(data["comment_count"], 0)
         self.check_db_count()
 
 
@@ -1124,18 +1032,12 @@ class DeleteAnswerTestCase(AnswerTestCase):
         self.set_up_user_question()
         eldpswp99 = User.objects.get(username="eldpswp99")
         question = Question.objects.get(title="Hello")
-        Answer.objects.create(
-            user=eldpswp99,
-            question=question,
-            content="world"
-        )
+        Answer.objects.create(user=eldpswp99, question=question, content="world")
 
     def test_delete_answer_answer_id_invalid_token(self):
         answer = Answer.objects.get(content="world")
 
-        response = self.client.delete(
-            f"/answer/{answer.id}/"
-        )
+        response = self.client.delete(f"/answer/{answer.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -1234,9 +1136,7 @@ class AnswerAcceptionTestCase(AnswerTestCase):
 
         for answer in range(2):
             Answer.objects.create(
-                user=eldpswp99,
-                question=question,
-                content=str(answer)
+                user=eldpswp99, question=question, content=str(answer)
             )
 
 
@@ -1246,9 +1146,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
     def test_post_answer_answer_id_accpetion_invalid_token(self):
         answer = Answer.objects.get(content="0")
 
-        response = self.client.post(
-            f"/answer/{answer.id}/acception/"
-        )
+        response = self.client.post(f"/answer/{answer.id}/acception/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -1281,7 +1179,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
     def test_post_answer_answer_id_acception_already_accepted(self):
         answer = Answer.objects.get(content="0")
-        answer.is_accepted=True
+        answer.is_accepted = True
         answer.save()
         question = answer.question
         question.has_accepted = True
@@ -1331,15 +1229,13 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         answer.is_accepted = True
         answer.save()
         question = answer.question
-        question.has_accepted=True
+        question.has_accepted = True
         question.save()
 
     def test_delete_answer_answer_id_accpetion_invalid_token(self):
         answer = Answer.objects.get(content="0")
 
-        response = self.client.delete(
-            f"/answer/{answer.id}/acception/"
-        )
+        response = self.client.delete(f"/answer/{answer.id}/acception/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
