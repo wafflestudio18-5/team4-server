@@ -24,7 +24,7 @@ class RateViewSet(viewsets.GenericViewSet):
             return Response(
                 {"message": "There is no question with the id"}, status=status.HTTP_404_NOT_FOUND,
             )
-        userquestion = user.userquestion.get(question=question)
+        userquestion = user.user_questions.objects.get(question=question)
         
         rating = request.data.get('rating')
         question.vote += rating - userquestion.rating
@@ -40,7 +40,46 @@ class RateViewSet(viewsets.GenericViewSet):
 
     # PUT /rate/answer/{answer_id}
     def rate_answer(self, request, pk=None):
-        pass
+        user = request.user
+        try:
+            answer = Answer.objects.get_object_or_404(id=pk)
+        except Answer.DoesNotExist:
+            return Response(
+                {"message": "There is no answer with the id"}, status=status.HTTP_404_NOT_FOUND,
+            )
+        useranswer = user.user_answers.objects.get(answer=answer)
+        
+        rating = request.data.get('rating')
+        answer.vote += rating - useranswer.rating
+        useranswer.rating = rating
+
+        data = {
+            "user_id": user.id,
+            "answer_id": answer.id,
+            "vote": answer.vote,
+            "rating": rating
+        }
+        return Response(data, status=status.HTTP_200_OK)   
+
     # PUT /rate/comment/{comment_id}
     def rate_comment(self, request, pk=None):
-        pass
+        user = request.user
+        try:
+            comment = Comment.objects.get_object_or_404(id=pk)
+        except Comment.DoesNotExist:
+            return Response(
+                {"message": "There is no comment with the id"}, status=status.HTTP_404_NOT_FOUND,
+            )
+        usercomment = user.user_comments.objects.get(comment=comment)
+        
+        rating = request.data.get('rating')
+        comment.vote += rating - usercomment.rating
+        usercomment.rating = rating
+
+        data = {
+            "user_id": user.id,
+            "comment_id": comment.id,
+            "vote": comment.vote,
+            "rating": rating
+        }
+        return Response(data, status=status.HTTP_200_OK)
