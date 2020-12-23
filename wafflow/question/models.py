@@ -11,6 +11,7 @@ class Question(models.Model):
     has_accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    vote = models.IntegerField(default=0)
 
 
 class UserQuestion(models.Model):
