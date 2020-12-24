@@ -1026,7 +1026,9 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         deleted_answer_count = kwargs.get("deleted_answer_count", 0)
 
         super().check_db_count(answer_count=answer_count)
-        Answer.objects.filter(is_active=False).count()
+        self.assertEqual(
+            Answer.objects.filter(is_active=False).count(), deleted_answer_count
+        )
 
     def setUp(self):
         self.set_up_user_question()
