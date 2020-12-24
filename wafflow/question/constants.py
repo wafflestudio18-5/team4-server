@@ -6,9 +6,9 @@ RECENT_ACTIVITY = "recent_activity"
 MOST_VOTES = "most_votes"
 MOST_FREQUENT = "most_frequent"
 
-VOTE = "votes"
+VOTES = "votes"
 ACTIVITY = "activity"
 OLDEST = "oldest"
-VIEW = "views"
+VIEWS = "views"
 
 QUESTION_PER_PAGE = 30

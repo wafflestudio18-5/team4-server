@@ -1,15 +1,23 @@
+import operator
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
+from django.db.models import Q
+from functools import reduce
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from answer.models import Answer, UserAnswer
 from question.constants import *
-from question.models import Question, UserQuestion, Tag, QuestionTag
-from question.serializers import QuestionSerializer, QuestionEditSerializer, QuestionProduceSerializer, QuestionUserSerializer
+from question.models import Question, Tag, QuestionTag
+from question.serializers import (
+    QuestionSerializer,
+    QuestionEditSerializer,
+    QuestionProduceSerializer,
+    QuestionUserSerializer,
+    QuestionTagSearchSerializer
+)
 
 
 class QuestionViewSet(viewsets.GenericViewSet):
@@ -26,6 +34,8 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return QuestionProduceSerializer
         elif self.action in ("update",):
             return QuestionEditSerializer
+        elif self.action in ("tagged", "search",):
+            return QuestionTagSearchSerializer
         else:
             return QuestionSerializer
 
@@ -64,7 +74,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
             question = Question.objects.get(pk=pk)
         except Question.DoesNotExist:
             return Response(
-                {"message": "There is no question with the given ID"},
+                {'error': "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         question.view_count += 1
@@ -93,8 +103,6 @@ class QuestionViewSet(viewsets.GenericViewSet):
     def tagged(self, request):
         tags = request.query_params.get('tags')
         filter_by = request.query_params.get('filter_by')
-        sorted_by = request.query_params.get('sorted_by')
-        page = request.query_params.get('page')
 
         tags = tags.split(' ') if tags else None
         tags = Tag.objects.filter(name__in=tags).all()
@@ -104,34 +112,33 @@ class QuestionViewSet(viewsets.GenericViewSet):
 
         # FIXME : filter_by 구현할 것.
 
-        if not (sorted_by in (NEWEST, RECENT_ACTIVITY, MOST_VOTES, MOST_FREQUENT)):
-            return Response(
-                {
-                    "message": "Invalid sorted_by."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if sorted_by == NEWEST:
-            questions = questions.order_by("-created_at")
-        elif sorted_by == RECENT_ACTIVITY:
-            questions = questions.order_by("-updated_at")
-        elif sorted_by == MOST_VOTES:
-            questions = questions.order_by("-vote")
-        elif sorted_by == MOST_FREQUENT:
-            questions = questions.order_by("-view_count")
+        sorted_questions = sort_questions(request, questions)
+        if sorted_questions is None:
+            return Response({'error': "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND)
+        paginated_questions = paginate_questions(request, sorted_questions)
+        if paginated_questions is None:
+            return Response({'error': "Invalid page"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(paginated_questions, many=True).data)
 
-        paginator = Paginator(questions, QUESTION_PER_PAGE)
+    @action(detail=False, methods=['GET'])
+    def search(self, request):
+        keywords = request.query_params.get('keywords')
+        filter_by = request.query_params.get('filter_by')
 
-        try:
-            questions = paginator.page(page)
-        except EmptyPage:
-            return Response(
-                {
-                    f"message": f"Invalid page it must be between 1 and {paginator.num_pages}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return Response(QuestionSerializer(questions, many=True).data)
+        keywords = keywords.split(' ') if keywords else None
+        questions = Question.objects.filter(
+            reduce(operator.and_,
+                   (Q(content__icontains=keyword) for keyword in keywords)))
+
+        # FIXME : filter_by 구현할 것.
+
+        sorted_questions = sort_questions(request, questions)
+        if sorted_questions is None:
+            return Response({'error': "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND)
+        paginated_questions = paginate_questions(request, sorted_questions)
+        if paginated_questions is None:
+            return Response({'error': "Invalid page"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(paginated_questions, many=True).data)
 
 
 class QuestionUserViewSet(viewsets.GenericViewSet):
@@ -145,39 +152,53 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
         try:
             user = User.objects.get(pk=pk)
         except User.DoesNotExist:
-            return Response(
-                {"message": "There is no user with the given ID"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        sorted_by = request.query_params.get("sorted_by")
-        if not (sorted_by in (VOTE, ACTIVITY, NEWEST, VIEW)):
-            return Response(
-                {
-                    "message": "Invalid sorted_by. It must be one of votes, activity, newest"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return None
         questions = Question.objects.filter(user=user, is_active=True)
-        if sorted_by == VOTE:
-            questions = questions.order_by("-vote")
-        elif sorted_by == ACTIVITY:
-            questions = questions.order_by("-updated_at")
-        elif sorted_by == NEWEST:
-            questions = questions.order_by("-created_at")
-        elif sorted_by == VIEW:
-            questions = questions.order_by("-view_count")
 
-        page = int(request.query_params.get("page"))
-        paginator = Paginator(questions, QUESTION_PER_PAGE)
+        sorted_user_questions = sort_user_questions(request, questions)
+        if sorted_user_questions is None:
+            return Response({'error': "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND)
+        paginated_questions = paginate_questions(request, sorted_user_questions)
+        if paginated_questions is None:
+            return Response({'error': "Invalid page"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(paginated_questions, many=True).data)
 
-        try:
-            questions = paginator.page(page)
-        except EmptyPage:
-            return Response(
-                {
-                    f"message": f"Invalid page it must be between 1 and {paginator.num_pages}"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        return Response(self.get_serializer(questions, many=True).data)
+
+def sort_questions(request, questions):
+    sorted_by = request.query_params.get("sorted_by")
+    if not (sorted_by in (NEWEST, RECENT_ACTIVITY, MOST_VOTES, MOST_FREQUENT)):
+        return None
+    if sorted_by == NEWEST:
+        questions = questions.order_by("-created_at")
+    elif sorted_by == RECENT_ACTIVITY:
+        questions = questions.order_by("-updated_at")
+    elif sorted_by == MOST_VOTES:
+        questions = questions.order_by("-vote")
+    elif sorted_by == MOST_FREQUENT:
+        questions = questions.order_by("-view_count")
+    return questions
+
+
+def sort_user_questions(request, questions):
+    sorted_by = request.query_params.get("sorted_by")
+    if not (sorted_by in (VOTES, ACTIVITY, NEWEST, VIEWS)):
+        return None
+    if sorted_by == VOTES:
+        questions = questions.order_by("-vote")
+    elif sorted_by == ACTIVITY:
+        questions = questions.order_by("-updated_at")
+    elif sorted_by == NEWEST:
+        questions = questions.order_by("-created_At")
+    elif sorted_by == VIEWS:
+        questions = questions.order_by("-view_count")
+    return questions
+
+
+def paginate_questions(request, questions):
+    page = int(request.query_params.get("page"))
+    paginator = Paginator(questions, QUESTION_PER_PAGE)
+    try:
+        questions = paginator.page(page)
+    except EmptyPage:
+        return None
+    return questions

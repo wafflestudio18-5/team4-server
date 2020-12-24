@@ -84,6 +84,30 @@ class QuestionSerializer(QuestionUserSerializer):
         return user_question.rating
 
 
+class QuestionIdSerializer(QuestionSerializer):
+    content = serializers.SerializerMethodField()
+
+    class Meta(QuestionSerializer.Meta):
+        fields = QuestionSerializer.Meta.fields + (
+            'content',
+        )
+
+    def get_content(self, question):
+        return question.content
+
+
+class QuestionTagSearchSerializer(QuestionSerializer):
+    content = serializers.SerializerMethodField()
+
+    class Meta(QuestionSerializer.Meta):
+        fields = QuestionSerializer.Meta.fields + (
+            'content',
+        )
+
+    def get_content(self, question):
+        return question.content[0:39]
+
+
 class QuestionProduceSerializer(serializers.ModelSerializer):
 
     class Meta:
