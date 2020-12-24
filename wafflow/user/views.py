@@ -16,37 +16,35 @@ from answer.models import UserAnswer
 class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated(), )
+    permission_classes = (IsAuthenticated(),)
 
     def get_permissions(self):
-        if self.action in ('create', 'login'):
-            return (AllowAny(), )
+        if self.action in ("create", "login"):
+            return (AllowAny(),)
         return self.permission_classes
-    
+
     def get_serializer_class(self):
-        if self.action == ('create', 'update'):
+        if self.action == ("create", "update"):
             return self.serializer_class
         return UserProfileSerializer
 
-    # POST /user
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save() 
-        
+        user = serializer.save()
+
         login(request, user)
 
         serializer = UserProfileSerializer(user.profile, data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.data
-        data['token'] = user.auth_token.key
+        data["token"] = user.auth_token.key
         return Response(data, status=status.HTTP_201_CREATED)
 
-    # PUT /user/login
-    @action(detail=False, methods=['PUT'])
+    @action(detail=False, methods=["PUT"])
     def login(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
+        username = request.data.get("username")
+        password = request.data.get("password")
 
         user = authenticate(request, username=username, password=password)
         if user and user.is_active == True:
@@ -54,21 +52,21 @@ class UserViewSet(viewsets.GenericViewSet):
 
             data = get_serializer(user.profile).data
             token, created = Token.objects.get_or_create(user=user)
-            data['token'] = token.key
+            data["token"] = token.key
             return Response(data)
 
-        return Response({"message": "Authentication failed"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "Authentication failed"}, status=status.HTTP_403_FORBIDDEN
+        )
 
-    # POST /user/logout
-    @action(detail=False, methods=['POST'])
+    @action(detail=False, methods=["POST"])
     def logout(self, request):
         logout(request)
         return Response()
 
-    # GET /user/me, /user/{user_id}
     def retrieve(self, request, pk=None):
-        if pk == 'me':
-            user = request.user  
+        if pk == "me":
+            user = request.user
             data = self.get_serializer(user.profile).data
             data["answer_count"] = user.user_answers.count()
             data["bookmark_count"] = user.user_questions.filter(bookmark=True).count()
@@ -77,14 +75,16 @@ class UserViewSet(viewsets.GenericViewSet):
             user = self.get_object()
             return Response(self.get_serializer(user.profile).data)
 
-    # PUT /user/me
     def update(self, request, pk=None):
-        if pk != 'me':
-            return Response({"message": "Not allowed to edit user not me"}, status=status.HTTP_403_FORBIDDEN)
+        if pk != "me":
+            return Response(
+                {"message": "Not allowed to edit user not me"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         user = request.user
         data = request.data
-        
+
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.update(user, serializer.validated_data)
@@ -94,11 +94,13 @@ class UserViewSet(viewsets.GenericViewSet):
         data = serializer.data
 
         return Response(data, status=status.HTTP_200_OK)
-    
-    # DELETE /user/me
+
     def destroy(self, request, pk=None):
-        if pk != 'me':
-            return Response({"message": "Not allowed to edit user not me or this user"}, status=status.HTTP_403_FORBIDDEN)
+        if pk != "me":
+            return Response(
+                {"message": "Not allowed to edit user not me or this user"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         user = request.user
         if user.is_active == True:
@@ -107,5 +109,3 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_204_NO_CONTENT)
-        
-        
