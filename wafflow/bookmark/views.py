@@ -98,10 +98,11 @@ class BookmarkUserViewSet(viewsets.GenericViewSet):
 
         page = int(request.query_params.get("page"))
         user_questions_all = UserQuestion.objects.filter(
-            user=request.user, bookmark=True, question__is_active=True
+            user=request.user, bookmark=True
         )
         questions_all = Question.objects.filter(
-            user_questions__in=self.sorted_by_queryset(user_questions_all, sorted_by)
+            is_active=True,
+            user_questions__in=self.sorted_by_queryset(user_questions_all, sorted_by),
         )
         paginator = Paginator(questions_all, BOOKMARK_PER_PAGE)
 

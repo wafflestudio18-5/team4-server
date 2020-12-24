@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from rest_framework import status
+from django.utils import timezone
 from rest_framework.authtoken.models import Token
 
 from answer.models import Answer, UserAnswer
@@ -57,11 +58,13 @@ class PostBookmarkTestCase(BookmarkTestCase):
     def test_post_bookmark_question_question_id_already_bookmarked(self):
         question = Question.objects.get(title="Hello")
         eldpswp99 = User.objects.get(username="eldpswp99")
+        qwerty = User.objects.get(username="qwerty")
         user_question, created = UserQuestion.objects.get_or_create(
             user=eldpswp99, question=question, defaults={"rating": 0}
         )
 
         user_question.bookmark = True
+        user_question.bookmark_at = timezone.now()
         user_question.save()
 
         response = self.client.post(
@@ -83,7 +86,10 @@ class PostBookmarkTestCase(BookmarkTestCase):
         self.assertEqual(data["question_id"], question.id)
         self.assertEqual(data["bookmark_count"], 2)
         self.assertEqual(data["bookmarked"], True)
-
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNotNone(user_question.bookmark_at)
+        user_question = UserQuestion.objects.get(user=qwerty, question=question)
+        self.assertIsNotNone(user_question.bookmark_at)
         self.check_db_count(user_question=2)
 
     def test_post_bookmark_question_question_id_twice(self):
@@ -96,6 +102,9 @@ class PostBookmarkTestCase(BookmarkTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
+        eldpswp99 = User.objects.get(username="eldpswp99")
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNotNone(user_question.bookmark_at)
 
         self.assert_in_data(data)
         self.assertEqual(data["user_id"], User.objects.get(username="eldpswp99").id)
@@ -107,6 +116,9 @@ class PostBookmarkTestCase(BookmarkTestCase):
             f"/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
+
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNotNone(user_question.bookmark_at)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count(user_question=1)
@@ -128,6 +140,10 @@ class PostBookmarkTestCase(BookmarkTestCase):
         self.assertEqual(data["bookmark_count"], 1)
         self.assertEqual(data["bookmarked"], True)
 
+        eldpswp99 = User.objects.get(username="eldpswp99")
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNotNone(user_question.bookmark_at)
+
         self.check_db_count(user_question=1)
 
 
@@ -140,7 +156,10 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
 
         super().check_db_count(user_question=user_question)
         self.assertEqual(
-            UserQuestion.objects.filter(bookmark=True).count(), bookmark_count
+            UserQuestion.objects.filter(
+                bookmark=True, question__is_active=True
+            ).count(),
+            bookmark_count,
         )
 
     def setUp(self):
@@ -152,6 +171,7 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         )
 
         user_question.bookmark = True
+        user_question.bookmark_at = timezone.now()
         user_question.save()
 
     def test_delete_bookmark_question_question_id_invalid_token(self):
@@ -186,6 +206,13 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
+        qwerty = User.objects.get(username="qwerty")
+        user_question = UserQuestion.objects.get(user=qwerty, question=question)
+        self.assertIsNone(user_question.bookmark_at)
+        eldpswp99 = User.objects.get(username="eldpswp99")
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNotNone(user_question.bookmark_at)
+
         data = response.data
 
         self.assert_in_data(data)
@@ -199,6 +226,9 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
             f"/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
+        eldpswp99 = User.objects.get(username="eldpswp99")
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNone(user_question.bookmark_at)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -228,6 +258,9 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         self.assertEqual(data["bookmarked"], False)
 
         self.check_db_count(bookmark_count=0)
+        eldpswp99 = User.objects.get(username="eldpswp99")
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNone(user_question.bookmark_at)
 
         response = self.client.delete(
             f"/bookmark/question/{question.id}/",
@@ -242,6 +275,9 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         self.assertEqual(data["question_id"], question.id)
         self.assertEqual(data["bookmark_count"], 0)
         self.assertEqual(data["bookmarked"], False)
+
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNone(user_question.bookmark_at)
 
         self.check_db_count(bookmark_count=0)
 
@@ -262,4 +298,11 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         self.assertEqual(data["bookmark_count"], 0)
         self.assertEqual(data["bookmarked"], False)
 
+        eldpswp99 = User.objects.get(username="eldpswp99")
+        user_question = UserQuestion.objects.get(user=eldpswp99, question=question)
+        self.assertIsNone(user_question.bookmark_at)
         self.check_db_count(bookmark_count=0)
+
+
+class GetBookmarkUserMeTestCase:
+    pass
