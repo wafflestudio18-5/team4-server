@@ -68,9 +68,7 @@ class QuestionSerializer(QuestionUserSerializer):
         }
 
     def get_bookmarked(self, question):
-        user = self.context['request'].user
-        if isinstance(user, AnonymousUser):
-            return False
+        user = question.user
         try:
             user_question = question.user_questions.get(user=user)
         except UserQuestion.DoesNotExist:
@@ -78,9 +76,7 @@ class QuestionSerializer(QuestionUserSerializer):
         return user_question.bookmark
 
     def get_rating(self, question):
-        user = self.context['request'].user
-        if isinstance(user, AnonymousUser):
-            return 0
+        user = question.user
         try:
             user_question = question.user_questions.get(user=user)
         except UserQuestion.DoesNotExist:

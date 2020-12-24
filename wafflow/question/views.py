@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from answer.models import Answer, UserAnswer
 from question.constants import *
 from question.models import Question, UserQuestion, Tag, QuestionTag
 from question.serializers import QuestionSerializer, QuestionEditSerializer, QuestionProduceSerializer, QuestionUserSerializer
@@ -88,6 +89,50 @@ class QuestionViewSet(viewsets.GenericViewSet):
             serializer.save()
         return Response(QuestionSerializer(question, context=self.get_serializer_context()).data)
 
+    @action(detail=False, methods=['GET'])
+    def tagged(self, request):
+        tags = request.query_params.get('tags')
+        filter_by = request.query_params.get('filter_by')
+        sorted_by = request.query_params.get('sorted_by')
+        page = request.query_params.get('page')
+
+        tags = tags.split(' ') if tags else None
+        tags = Tag.objects.filter(name__in=tags).all()
+        question_tags = [tag.question_tags.all() for tag in tags]
+        questions_id = list(set([question.question_id for question_tag in question_tags for question in question_tag]))
+        questions = Question.objects.filter(is_active=True, id__in=questions_id).all()
+
+        # FIXME : filter_by 구현할 것.
+
+        if not (sorted_by in (NEWEST, RECENT_ACTIVITY, MOST_VOTES, MOST_FREQUENT)):
+            return Response(
+                {
+                    "message": "Invalid sorted_by."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if sorted_by == NEWEST:
+            questions = questions.order_by("-created_at")
+        elif sorted_by == RECENT_ACTIVITY:
+            questions = questions.order_by("-updated_at")
+        elif sorted_by == MOST_VOTES:
+            questions = questions.order_by("-vote")
+        elif sorted_by == MOST_FREQUENT:
+            questions = questions.order_by("-view_count")
+
+        paginator = Paginator(questions, QUESTION_PER_PAGE)
+
+        try:
+            questions = paginator.page(page)
+        except EmptyPage:
+            return Response(
+                {
+                    f"message": f"Invalid page it must be between 1 and {paginator.num_pages}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(QuestionSerializer(questions, many=True).data)
+
 
 class QuestionUserViewSet(viewsets.GenericViewSet):
     queryset = Question.objects.all()
@@ -113,18 +158,18 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        questions_all = Question.objects.filter(user=user, is_active=True)
+        questions = Question.objects.filter(user=user, is_active=True)
         if sorted_by == VOTE:
-            questions_all = questions_all.order_by("-vote")
+            questions = questions.order_by("-vote")
         elif sorted_by == ACTIVITY:
-            questions_all = questions_all.order_by("-updated_at")
+            questions = questions.order_by("-updated_at")
         elif sorted_by == NEWEST:
-            questions_all = questions_all.order_by("-created_at")
+            questions = questions.order_by("-created_at")
         elif sorted_by == VIEW:
-            questions_all = questions_all.order_by("-view_count")
+            questions = questions.order_by("-view_count")
 
         page = int(request.query_params.get("page"))
-        paginator = Paginator(questions_all, QUESTION_PER_PAGE)
+        paginator = Paginator(questions, QUESTION_PER_PAGE)
 
         try:
             questions = paginator.page(page)
