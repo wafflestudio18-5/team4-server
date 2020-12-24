@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class Question(models.Model):
-    user = models.ForeignKey(User, related_name="questions", on_delete=models.CASCADE);
+    user = models.ForeignKey(User, related_name="questions", on_delete=models.CASCADE)
     view_count = models.PositiveIntegerField(default=0)
     title = models.CharField(max_length=200)
     content = models.CharField(max_length=5000)
@@ -29,8 +29,13 @@ class UserQuestion(models.Model):
     bookmark = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(User, related_name="user_questions", on_delete=models.CASCADE);
-    question = models.ForeignKey(Question, related_name="user_questions", on_delete=models.CASCADE);
+    user = models.ForeignKey(
+        User, related_name="user_questions", on_delete=models.CASCADE
+    )
+    question = models.ForeignKey(
+        Question, related_name="user_questions", on_delete=models.CASCADE
+    )
+    bookmark_at = models.DateTimeField(null=True)
 
 
 class Tag(models.Model):
@@ -38,5 +43,7 @@ class Tag(models.Model):
 
 
 class QuestionTag(models.Model):
-    question = models.ForeignKey(Question, related_name="question_tags", on_delete=models.CASCADE)
+    question = models.ForeignKey(
+        Question, related_name="question_tags", on_delete=models.CASCADE
+    )
     tag = models.ForeignKey(Tag, related_name="question_tags", on_delete=models.CASCADE)

@@ -14,4 +14,6 @@ class SimpleBookmarkSerializer(serializers.ModelSerializer):
 
     def get_bookmark_count(self, user_question):
         question = user_question.question
-        return UserQuestion.objects.filter(question=question, bookmark=True).count()
+        return UserQuestion.objects.filter(
+            question=question, bookmark=True, question__is_active=True
+        ).count()

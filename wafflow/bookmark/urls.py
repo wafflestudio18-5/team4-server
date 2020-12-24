@@ -1,12 +1,14 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
-from bookmark.views import BookmarkViewSet
+from bookmark.views import BookmarkQuestionViewSet, BookmarkUserViewSet
 
 app_name = "bookmark"
 
 router = SimpleRouter()
 
-bookmark_question_detail = BookmarkViewSet.as_view(
+router.register("bookmark/user", BookmarkUserViewSet, basename="bookmark_user")
+
+bookmark_question_detail = BookmarkQuestionViewSet.as_view(
     {"post": "make", "delete": "destroy"}
 )
 
