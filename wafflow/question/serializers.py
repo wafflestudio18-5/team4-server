@@ -10,13 +10,13 @@ class SimpleQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = (
-            'id',
-            'view_count',
-            'title',
-            'vote',
-            'has_accepted',
-            'created_at',
-            'updated_at',
+            "id",
+            "view_count",
+            "title",
+            "vote",
+            "has_accepted",
+            "created_at",
+            "updated_at",
         )
 
 
@@ -28,10 +28,10 @@ class QuestionUserSerializer(serializers.ModelSerializer):
 
     class Meta(SimpleQuestionSerializer.Meta):
         fields = SimpleQuestionSerializer.Meta.fields + (
-            'answer_count',
-            'bookmark_count',
-            'comment_count',
-            'tags',
+            "answer_count",
+            "bookmark_count",
+            "comment_count",
+            "tags",
         )
 
     def get_answer_count(self, question):
@@ -54,9 +54,9 @@ class QuestionSerializer(QuestionUserSerializer):
 
     class Meta(QuestionUserSerializer.Meta):
         fields = QuestionUserSerializer.Meta.fields + (
-            'author',
-            'bookmarked',
-            'rating',
+            "author",
+            "bookmarked",
+            "rating",
         )
 
     def get_author(self, question):
@@ -88,9 +88,7 @@ class QuestionIdSerializer(QuestionSerializer):
     content = serializers.SerializerMethodField()
 
     class Meta(QuestionSerializer.Meta):
-        fields = QuestionSerializer.Meta.fields + (
-            'content',
-        )
+        fields = QuestionSerializer.Meta.fields + ("content",)
 
     def get_content(self, question):
         return question.content
@@ -100,29 +98,32 @@ class QuestionTagSearchSerializer(QuestionSerializer):
     content = serializers.SerializerMethodField()
 
     class Meta(QuestionSerializer.Meta):
-        fields = QuestionSerializer.Meta.fields + (
-            'content',
-        )
+        fields = QuestionSerializer.Meta.fields + ("content",)
 
     def get_content(self, question):
         return question.content[0:39]
 
 
 class QuestionProduceSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Question
-        fields = ('title', 'content',)
+        fields = (
+            "title",
+            "content",
+        )
 
     def create(self, validated_data):
-        user = self.context['request'].user
+        user = self.context["request"].user
         return Question.objects.create(**validated_data, user=user)
 
 
 class QuestionEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ("title", "content",)
+        fields = (
+            "title",
+            "content",
+        )
 
 
 class QuestionTagSerializer(serializers.ModelSerializer):
@@ -131,11 +132,13 @@ class QuestionTagSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tag
-        fields = ('id', 'name',)
+        fields = (
+            "id",
+            "name",
+        )
 
     def get_id(self, question_tags):
         return question_tags.tag_id
 
     def get_name(self, question_tags):
         return Tag.objects.get(id=question_tags.tag_id).name
-

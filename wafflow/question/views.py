@@ -16,7 +16,7 @@ from question.serializers import (
     QuestionEditSerializer,
     QuestionProduceSerializer,
     QuestionUserSerializer,
-    QuestionTagSearchSerializer
+    QuestionTagSearchSerializer,
 )
 
 
@@ -25,7 +25,10 @@ class QuestionViewSet(viewsets.GenericViewSet):
     serializer_class = QuestionSerializer
 
     def get_permissions(self):
-        if self.action in ("create", "update",):
+        if self.action in (
+            "create",
+            "update",
+        ):
             return (IsAuthenticated(),)
         return (AllowAny(),)
 
@@ -34,7 +37,10 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return QuestionProduceSerializer
         elif self.action in ("update",):
             return QuestionEditSerializer
-        elif self.action in ("tagged", "search",):
+        elif self.action in (
+            "tagged",
+            "search",
+        ):
             return QuestionTagSearchSerializer
         else:
             return QuestionSerializer
@@ -44,15 +50,17 @@ class QuestionViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data.copy()
         if not user:
-            return Response({'error': "질문하려면 로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "질문하려면 로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED
+            )
 
         with transaction.atomic():
             question_serializer = self.get_serializer(data=data)
             question_serializer.is_valid(raise_exception=True)
             question = question_serializer.save()
 
-            raw_tags = data.get('tags')
-            tags = raw_tags.split('+') if raw_tags else None
+            raw_tags = data.get("tags")
+            tags = raw_tags.split("+") if raw_tags else None
             if tags:
                 for tag in tags:
                     if not Tag.objects.filter(name=tag).exists():
@@ -65,7 +73,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
             user_profile.save()
         return Response(
             QuestionSerializer(question, context=self.get_serializer_context()).data,
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
 
     def retrieve(self, request, pk=None):
@@ -74,7 +82,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
             question = Question.objects.get(pk=pk)
         except Question.DoesNotExist:
             return Response(
-                {'error': "There is no question with the given ID"},
+                {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         question.view_count += 1
@@ -86,58 +94,83 @@ class QuestionViewSet(viewsets.GenericViewSet):
         user = request.user
         question = self.get_object()
         if not question.user == user:
-            return Response({'error': "작성자만 Question을 수정할 수 있습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"error": "작성자만 Question을 수정할 수 있습니다."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         data = request.data.copy()
         title = data.get("title")
         content = data.get("content")
         if not title or not content:
-            return Response({'error': "제목과 본문은 필수적으로 입력해야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "제목과 본문은 필수적으로 입력해야 합니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
         else:
             serializer = self.get_serializer(question, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-        return Response(QuestionSerializer(question, context=self.get_serializer_context()).data)
+        return Response(
+            QuestionSerializer(question, context=self.get_serializer_context()).data
+        )
 
-    @action(detail=False, methods=['GET'])
+    @action(detail=False, methods=["GET"])
     def tagged(self, request):
-        tags = request.query_params.get('tags')
-        filter_by = request.query_params.get('filter_by')
+        tags = request.query_params.get("tags")
+        filter_by = request.query_params.get("filter_by")
 
-        tags = tags.split(' ') if tags else None
+        tags = tags.split(" ") if tags else None
         tags = Tag.objects.filter(name__in=tags).all()
         question_tags = [tag.question_tags.all() for tag in tags]
-        questions_id = list(set([question.question_id for question_tag in question_tags for question in question_tag]))
+        questions_id = list(
+            set(
+                [
+                    question.question_id
+                    for question_tag in question_tags
+                    for question in question_tag
+                ]
+            )
+        )
         questions = Question.objects.filter(is_active=True, id__in=questions_id).all()
 
         # FIXME : filter_by 구현할 것.
 
         sorted_questions = sort_questions(request, questions)
         if sorted_questions is None:
-            return Response({'error': "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND
+            )
         paginated_questions = paginate_questions(request, sorted_questions)
         if paginated_questions is None:
-            return Response({'error': "Invalid page"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(self.get_serializer(paginated_questions, many=True).data)
 
-    @action(detail=False, methods=['GET'])
+    @action(detail=False, methods=["GET"])
     def search(self, request):
-        keywords = request.query_params.get('keywords')
-        filter_by = request.query_params.get('filter_by')
+        keywords = request.query_params.get("keywords")
+        filter_by = request.query_params.get("filter_by")
 
-        keywords = keywords.split(' ') if keywords else None
+        keywords = keywords.split(" ") if keywords else None
         questions = Question.objects.filter(
-            reduce(operator.and_,
-                   (Q(content__icontains=keyword) for keyword in keywords)))
+            reduce(
+                operator.and_, (Q(content__icontains=keyword) for keyword in keywords)
+            )
+        )
 
         # FIXME : filter_by 구현할 것.
 
         sorted_questions = sort_questions(request, questions)
         if sorted_questions is None:
-            return Response({'error': "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND
+            )
         paginated_questions = paginate_questions(request, sorted_questions)
         if paginated_questions is None:
-            return Response({'error': "Invalid page"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(self.get_serializer(paginated_questions, many=True).data)
 
 
@@ -157,10 +190,14 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
 
         sorted_user_questions = sort_user_questions(request, questions)
         if sorted_user_questions is None:
-            return Response({'error': "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Invalid sorted_by."}, status=status.HTTP_404_NOT_FOUND
+            )
         paginated_questions = paginate_questions(request, sorted_user_questions)
         if paginated_questions is None:
-            return Response({'error': "Invalid page"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(self.get_serializer(paginated_questions, many=True).data)
 
 
@@ -188,7 +225,7 @@ def sort_user_questions(request, questions):
     elif sorted_by == ACTIVITY:
         questions = questions.order_by("-updated_at")
     elif sorted_by == NEWEST:
-        questions = questions.order_by("-created_At")
+        questions = questions.order_by("-created_at")
     elif sorted_by == VIEWS:
         questions = questions.order_by("-view_count")
     return questions
