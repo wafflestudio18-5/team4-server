@@ -1133,13 +1133,17 @@ class AnswerAcceptionTestCase(UserQuestionTestSetting):
 
     def setUp(self):
         self.set_up_user_question()
-        eldpswp99 = User.objects.get(username="eldpswp99")
+        qwerty = User.objects.get(username="qwerty")
         question = Question.objects.get(title="Hello")
 
         for answer in range(2):
-            Answer.objects.create(
-                user=eldpswp99, question=question, content=str(answer)
-            )
+            Answer.objects.create(user=qwerty, question=question, content=str(answer))
+
+    def check_reputation(self, eldpswp99_reputation=0, qwerty_reputation=1234):
+        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(eldpswp99_profile.reputation, eldpswp99_reputation)
+        qwerty_profile = User.objects.get(username="qwerty").profile
+        self.assertEqual(qwerty_profile.reputation, qwerty_reputation)
 
 
 class PostAcceptionTestCase(AnswerAcceptionTestCase):
@@ -1159,6 +1163,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.check_db_count()
+        self.check_reputation()
 
     def test_post_answer_answer_id_acception_invalid_id(self):
         response = self.client.post(
@@ -1167,6 +1172,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_reputation()
 
     def test_post_answer_answer_id_acception_not_allowed_user(self):
         answer = Answer.objects.get(content="0")
@@ -1178,6 +1184,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.check_db_count()
+        self.check_reputation()
 
     def test_post_answer_answer_id_acception_already_accepted(self):
         answer = Answer.objects.get(content="0")
@@ -1186,6 +1193,12 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
         question.has_accepted = True
         question.save()
+        answer_user_profile = answer.user.profile
+        question_user_profile = question.user.profile
+        question_user_profile.reputation += 2
+        answer_user_profile.reputation += 15
+        answer_user_profile.save()
+        question_user_profile.save()
 
         response = self.client.post(
             f"/answer/{answer.id}/acception/",
@@ -1194,6 +1207,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
+        self.check_reputation(eldpswp99_reputation=2, qwerty_reputation=1249)
 
     def test_post_answer_answer_id_acception_twice(self):
         answer = Answer.objects.get(content="0")
@@ -1211,8 +1225,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["has_accepted"], True)
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], True)
-        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
-        self.assertEqual(eldpswp99_profile.reputation, 15)
+        self.check_reputation(eldpswp99_reputation=2, qwerty_reputation=1249)
 
         response = self.client.post(
             f"/answer/{answer.id}/acception/",
@@ -1221,13 +1234,13 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         eldpswp99_profile = User.objects.get(username="eldpswp99").profile
-        self.assertEqual(eldpswp99_profile.reputation, 15)
 
         self.check_db_count()
+        self.check_reputation(eldpswp99_reputation=2, qwerty_reputation=1249)
 
     def test_post_answer_answer_id_acception(self):
         answer = Answer.objects.get(content="0")
-        eldpswp99_profile = answer.user.profile
+        eldpswp99_profile = answer.question.user.profile
         eldpswp99_profile.reputation = 123
         eldpswp99_profile.save()
         question = answer.question
@@ -1244,12 +1257,17 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["has_accepted"], True)
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], True)
-        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
-        self.assertEqual(eldpswp99_profile.reputation, 138)
+        self.check_reputation(eldpswp99_reputation=125, qwerty_reputation=1249)
 
 
 class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
     client = Client()
+
+    def check_reputation(self, eldpswp99_reputation=2, qwerty_reputation=1249):
+        super().check_reputation(
+            eldpswp99_reputation=eldpswp99_reputation,
+            qwerty_reputation=qwerty_reputation,
+        )
 
     def setUp(self):
         super().setUp()
@@ -1259,9 +1277,12 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
         question.has_accepted = True
         question.save()
-        user_profile = answer.user.profile
-        user_profile.reputation += 15
-        user_profile.save()
+        answer_user_profile = answer.user.profile
+        answer_user_profile.reputation += 15
+        answer_user_profile.save()
+        question_user_profile = question.user.profile
+        question_user_profile.reputation += 2
+        question_user_profile.save()
 
     def test_delete_answer_answer_id_accpetion_invalid_token(self):
         answer = Answer.objects.get(content="0")
@@ -1277,6 +1298,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.check_db_count()
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_invalid_id(self):
         response = self.client.delete(
@@ -1285,6 +1307,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_not_allowed_user(self):
         answer = Answer.objects.get(content="0")
@@ -1296,6 +1319,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.check_db_count()
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_not_accepted(self):
         answer = Answer.objects.get(content="1")
@@ -1307,6 +1331,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_twice(self):
         answer = Answer.objects.get(content="0")
@@ -1325,9 +1350,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], False)
 
-        user_profile = User.objects.get(username="eldpswp99").profile
-        self.assertEqual(user_profile.reputation, 0)
-
+        self.check_reputation(eldpswp99_reputation=0, qwerty_reputation=1234)
         response = self.client.delete(
             f"/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
@@ -1338,6 +1361,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         user_profile = User.objects.get(username="eldpswp99").profile
         self.assertEqual(user_profile.reputation, 0)
         self.check_db_count()
+        self.check_reputation(eldpswp99_reputation=0, qwerty_reputation=1234)
 
     def test_delete_answer_answer_id_acception(self):
         answer = Answer.objects.get(content="0")
@@ -1359,5 +1383,4 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], False)
 
-        user_profile = User.objects.get(username="eldpswp99").profile
-        self.assertEqual(user_profile.reputation, 108)
+        self.check_reputation(eldpswp99_reputation=0, qwerty_reputation=108)

@@ -224,7 +224,7 @@ class AnswerViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if request.user != answer.user:
+        if request.user != answer.question.user:
             return Response(
                 {"message": "Not allowed to change acception of this answer"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -242,9 +242,12 @@ class AnswerViewSet(viewsets.GenericViewSet):
         question.has_accepted = is_accepted
         question.save()
 
-        user_profile = answer.user.profile
-        user_profile.reputation += 15 * (1 if is_accepted else -1)
-        user_profile.save()
+        answer_user_profile = answer.user.profile
+        question_user_profile = question.user.profile
+        question_user_profile.reputation += 2 * (1 if is_accepted else -1)
+        answer_user_profile.reputation += 15 * (1 if is_accepted else -1)
+        answer_user_profile.save()
+        question_user_profile.save()
 
     def post_acception(self, request, answer):
         if answer.question.has_accepted:
