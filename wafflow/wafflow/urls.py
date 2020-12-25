@@ -20,4 +20,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("answer.urls")),
     path("", include("comment.urls")),
+    path("", include("user.urls")),
 ]
