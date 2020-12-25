@@ -26,8 +26,9 @@ class CommentViewSet(viewsets.GenericViewSet):
         return (AllowAny(),)
 
     def retrieve(self, request, pk=None):
-        comment = Comment.objects.filter(pk=pk, is_active=True).last()
-        if not comment:
+        try:
+            comment = Comment.objects.get(pk=pk, is_active=True)
+        except Comment.DoesNotExist:
             return Response(
                 {"error": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -35,10 +36,11 @@ class CommentViewSet(viewsets.GenericViewSet):
         return Response(self.get_serializer(comment).data)
 
     def update(self, request, pk=None):
-        comment = Comment.objects.filter(pk=pk, is_active=True).last()
-        if not comment:
+        try:
+            comment = Comment.objects.get(pk=pk, is_active=True)
+        except Comment.DoesNotExist:
             return Response(
-                {"message": "There is no comment with the given ID"},
+                {"error": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         if request.user != comment.user:
@@ -92,20 +94,22 @@ class CommentAnswerViewSet(viewsets.GenericViewSet):
             return CommentAnswerProduceSerializer
 
     def retrieve(self, request, pk=None):
-        answer = Answer.objects.filter(pk=pk, is_active=True)
-        if not answer:
+        try:
+            answer = Answer.objects.get(pk=pk, is_active=True)
+        except Answer.DoesNotExist:
             return Response(
-                {"message": "There is no answer with the given ID"},
+                {"error": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         comments = Comment.objects.filter(answer=answer, is_active=True)
         return Response(self.get_serializer(comments, many=True).data)
 
     def make(self, request, pk=None):
-        answer = Answer.objects.filter(pk=pk, is_active=True)
-        if not answer:
+        try:
+            answer = Answer.objects.get(pk=pk, is_active=True)
+        except Answer.DoesNotExist:
             return Response(
-                {"message": "There is no answer with the given ID"},
+                {"error": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         data = request.data.copy()
@@ -136,20 +140,22 @@ class CommentQuestionViewSet(viewsets.GenericViewSet):
             return CommentQuestionProduceSerializer
 
     def retrieve(self, request, pk=None):
-        question = Question.objects.filter(pk=pk, is_active=True)
-        if not question:
+        try:
+            question = Question.objects.get(pk=pk, is_active=True)
+        except Question.DoesNotExist:
             return Response(
-                {"message": "There is no question with the given ID"},
+                {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         comments = Comment.objects.filter(question=question, is_active=True)
         return Response(self.get_serializer(comments, many=True).data)
 
     def make(self, request, pk=None):
-        question = Question.objects.filter(pk=pk, is_active=True)
-        if not question:
+        try:
+            question = Question.objects.get(pk=pk, is_active=True)
+        except Question.DoesNotExist:
             return Response(
-                {"message": "There is no question with the given ID"},
+                {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         data = request.data.copy()
