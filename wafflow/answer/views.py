@@ -32,6 +32,11 @@ class AnswerUserViewSet(viewsets.GenericViewSet):
                 {"message": "There is no user with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        if not user.is_active:
+            return Response(
+                {"message": "This user is not active"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         sorted_by = request.query_params.get("sorted_by")
 
@@ -89,6 +94,11 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
                 {"message": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        if not question.is_active:
+            return Response(
+                {"message": "This question is not active"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         sorted_by = request.query_params.get("sorted_by")
 
@@ -130,7 +140,13 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
                 {"message": "There is no question with the given id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        data = request.data
+        if not question.is_active:
+            return Response(
+                {"message": "This question is not active"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = request.data.copy()
         data["question_id"] = pk
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -159,11 +175,16 @@ class AnswerViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            answer = Answer.objects.get(pk=pk, is_active=True)
+            answer = Answer.objects.get(pk=pk)
         except Answer.DoesNotExist:
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        if not answer.is_active:
+            return Response(
+                {"message": "This answer is not active"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(self.get_serializer(answer).data)
@@ -175,6 +196,11 @@ class AnswerViewSet(viewsets.GenericViewSet):
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        if not answer.is_active:
+            return Response(
+                {"message": "This answer is not active"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if request.user != answer.user:
@@ -222,6 +248,11 @@ class AnswerViewSet(viewsets.GenericViewSet):
             return Response(
                 {"message": "There is no answer with the given id"},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+        if not answer.is_active:
+            return Response(
+                {"message": "This answer is not active"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if request.user != answer.question.user:
