@@ -65,8 +65,9 @@ class QuestionViewSet(viewsets.GenericViewSet):
         )
 
     def retrieve(self, request, pk=None):
-        question = Question.objects.filter(pk=pk, is_active=True).last()
-        if not question:
+        try:
+            question = Question.objects.get(pk=pk, is_active=True)
+        except Question.DoesNotExist:
             return Response(
                 {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -76,8 +77,9 @@ class QuestionViewSet(viewsets.GenericViewSet):
         return Response(QuestionInfoSerializer(question).data)
 
     def update(self, request, pk=None):
-        question = Question.objects.filter(pk=pk, is_active=True).last()
-        if not question:
+        try:
+            question = Question.objects.get(pk=pk, is_active=True)
+        except Question.DoesNotExist:
             return Response(
                 {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -193,10 +195,11 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
         return (AllowAny(),)
 
     def retrieve(self, request, pk=None):
-        user = User.objects.filter(pk=pk, is_active=True).last()
-        if not user:
+        try:
+            user = User.objects.get(pk=pk, is_active=True)
+        except User.DoesNotExist:
             return Response(
-                {"error": "There is no user with the given ID"},
+                {"message": "There is no user with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         questions = Question.objects.filter(user=user, is_active=True)
