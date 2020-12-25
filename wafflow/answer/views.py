@@ -26,16 +26,11 @@ class AnswerUserViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            user = User.objects.get(pk=pk)
+            user = User.objects.get(pk=pk, is_active=True)
         except User.DoesNotExist:
             return Response(
                 {"message": "There is no user with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not user.is_active:
-            return Response(
-                {"message": "This user is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         sorted_by = request.query_params.get("sorted_by")
@@ -88,16 +83,11 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            question = Question.objects.get(pk=pk)
+            question = Question.objects.get(pk=pk, is_active=True)
         except Question.DoesNotExist:
             return Response(
                 {"message": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not question.is_active:
-            return Response(
-                {"message": "This question is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         sorted_by = request.query_params.get("sorted_by")
@@ -134,16 +124,11 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
 
     def make(self, request, pk=None):
         try:
-            question = Question.objects.get(pk=pk)
+            question = Question.objects.get(pk=pk, is_active=True)
         except Question.DoesNotExist:
             return Response(
                 {"message": "There is no question with the given id"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not question.is_active:
-            return Response(
-                {"message": "This question is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         data = request.data.copy()
@@ -175,32 +160,22 @@ class AnswerViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            answer = Answer.objects.get(pk=pk)
+            answer = Answer.objects.get(pk=pk, is_active=True)
         except Answer.DoesNotExist:
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not answer.is_active:
-            return Response(
-                {"message": "This answer is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response(self.get_serializer(answer).data)
 
     def update(self, request, pk=None):
         try:
-            answer = Answer.objects.get(pk=pk)
+            answer = Answer.objects.get(pk=pk, is_active=True)
         except Answer.DoesNotExist:
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not answer.is_active:
-            return Response(
-                {"message": "This answer is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if request.user != answer.user:
@@ -243,16 +218,11 @@ class AnswerViewSet(viewsets.GenericViewSet):
     @action(methods=["DELETE", "POST"], detail=True)
     def acception(self, request, pk=None):
         try:
-            answer = Answer.objects.get(pk=pk)
+            answer = Answer.objects.get(pk=pk, is_active=True)
         except Answer.DoesNotExist:
             return Response(
                 {"message": "There is no answer with the given id"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not answer.is_active:
-            return Response(
-                {"message": "This answer is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if request.user != answer.question.user:

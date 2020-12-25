@@ -195,7 +195,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         answer.save()
 
         response = self.client.get(f"/answer/{answer.id}/")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def test_get_answer_answer_id_deleted_comment(self):
@@ -303,7 +303,7 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         user.save()
         response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page={1}")
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def test_get_answer_user_user_id_invalid_page(self):
@@ -491,7 +491,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=votes&page=1"
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def test_get_answer_question_question_id_invalid_sorted_by(self):
@@ -854,7 +854,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def post_answer_question_question_id_invalid_content(self):
@@ -973,7 +973,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_put_answer_answer_id_not_allowed_user(self):
         answer = Answer.objects.get(content="world")
@@ -1245,7 +1245,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_reputation()
 
     def test_post_answer_answer_id_acception_not_allowed_user(self):
@@ -1393,7 +1393,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_reputation()
 
     def test_delete_answer_answer_id_acception_not_allowed_user(self):
