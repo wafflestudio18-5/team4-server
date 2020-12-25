@@ -112,7 +112,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
 
         tags = tags.split(" ") if tags else None
         if not tags:
-            questions = Question.objects.all()
+            questions = Question.objects.filter(is_active=True)
         else:
             tags = Tag.objects.filter(name__in=tags).all()
             question_tags = [tag.question_tags.all() for tag in tags]
@@ -156,7 +156,7 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
 
         keywords = keywords.split(" ") if keywords else None
         if not keywords:
-            questions = Question.objects.all()
+            questions = Question.objects.filter(is_active=True)
         else:
             questions = Question.objects.filter(
                 reduce(
