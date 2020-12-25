@@ -15,7 +15,6 @@ class RateViewSet(viewsets.GenericViewSet):
     def get_permissions(self):
         return self.permission_classes
 
-    # PUT /rate/question/{question_id}
     @api_view(("PUT",))
     def rate_question(request, pk):
         user = request.user
@@ -26,16 +25,20 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "There is no question with the id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        try:
-            userquestion = user.user_questions.get(question=question)
-        except:
-            userquestion = UserQuestion.objects.create(
-                user=user, question=question, rating=UserQuestion.NONE
+        if question.user == user:
+            return Response(
+                {"message": "Not allowed to rate this question"},
+                status=status.HTTP_403_FORBIDDEN,
             )
+        userquestion, created = UserQuestion.objects.get_or_create(
+            user=user, question=question, defaults={"rating": 0}
+        )
 
         rating = int(request.data.get("rating"))
         question.vote += rating - userquestion.rating
         userquestion.rating = rating
+        question.save()
+        userquestion.save()
 
         data = {
             "user_id": user.id,
@@ -45,7 +48,6 @@ class RateViewSet(viewsets.GenericViewSet):
         }
         return Response(data, status=status.HTTP_200_OK)
 
-    # PUT /rate/answer/{answer_id}
     @api_view(("PUT",))
     def rate_answer(request, pk):
         user = request.user
@@ -56,16 +58,20 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "There is no answer with the id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        try:
-            useranswer = user.user_answers.get(answer=answer)
-        except:
-            useranswer = UserAnswer.objects.create(
-                user=user, answer=answer, rating=UserAnswer.NONE
+        if answer.user == user:
+            return Response(
+                {"message": "Not allowed to rate this answer"},
+                status=status.HTTP_403_FORBIDDEN,
             )
+        useranswer, created = UserAnswer.objects.get_or_create(
+            user=user, answer=answer, defaults={"rating": 0}
+        )
 
         rating = int(request.data.get("rating"))
         answer.vote += rating - useranswer.rating
         useranswer.rating = rating
+        answer.save()
+        useranswer.save()
 
         data = {
             "user_id": user.id,
@@ -75,7 +81,6 @@ class RateViewSet(viewsets.GenericViewSet):
         }
         return Response(data, status=status.HTTP_200_OK)
 
-    # PUT /rate/comment/{comment_id}
     @api_view(("PUT",))
     def rate_comment(request, pk):
         user = request.user
@@ -86,16 +91,20 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "There is no comment with the id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        try:
-            usercomment = user.user_comments.get(comment=comment)
-        except:
-            usercomment = UserComment.objects.create(
-                user=user, comment=comment, rating=UserComment.NONE
+        if comment.user == user:
+            return Response(
+                {"message": "Not allowed to rate this comment"},
+                status=status.HTTP_403_FORBIDDEN,
             )
+        usercomment, created = UserComment.objects.get_or_create(
+            user=user, comment=comment, defaults={"rating": 0}
+        )
 
         rating = int(request.data.get("rating"))
         comment.vote += rating - usercomment.rating
         usercomment.rating = rating
+        comment.save()
+        usercomment.save()
 
         data = {
             "user_id": user.id,
