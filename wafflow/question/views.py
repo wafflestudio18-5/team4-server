@@ -195,7 +195,10 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         user = User.objects.filter(pk=pk, is_active=True).last()
         if not user:
-            return None
+            return Response(
+                {"error": "There is no user with the given ID"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         questions = Question.objects.filter(user=user, is_active=True)
 
         sorted_user_questions = sort_user_questions(request, questions)
