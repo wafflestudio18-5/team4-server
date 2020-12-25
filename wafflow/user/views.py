@@ -90,7 +90,7 @@ class UserViewSet(viewsets.GenericViewSet):
         user = request.user
         data = request.data
 
-        serializer = self.get_serializer(user, data=data)
+        serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 

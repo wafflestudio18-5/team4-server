@@ -8,10 +8,10 @@ from user.models import UserProfile
 
 class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
-    password = serializers.CharField(required=False, write_only=True)
+    password = serializers.CharField(write_only=True)
     email = serializers.EmailField()
     last_login = serializers.DateTimeField(read_only=True)
-    nickname = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    nickname = serializers.CharField(allow_blank=True, write_only=True)
     picture = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
@@ -36,11 +36,9 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.get("password")
         nickname = validated_data.pop("nickname")
         picture = validated_data.pop("picture", None)
+        if not picture:
+            picture = ""
 
-        if not password or password == "":
-            raise serializers.ValidationError("Password required!")
-        if not nickname or nickname == "":
-            raise serializers.ValidationError("Nickname required!")
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("Email already exists")
         if User.objects.filter(username=username).exists():
