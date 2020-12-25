@@ -140,7 +140,6 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
             )
-        print(self.get_serializer())
         return Response(
             QuestionTagSearchSerializer(paginated_questions, many=True).data
         )
