@@ -112,21 +112,22 @@ class QuestionViewSet(viewsets.GenericViewSet):
 
         tags = tags.split(" ") if tags else None
         if not tags:
-            return Response(
-                {"error": "Please enter tags"}, status=status.HTTP_404_NOT_FOUND
+            questions = Question.objects.all()
+        else:
+            tags = Tag.objects.filter(name__in=tags).all()
+            question_tags = [tag.question_tags.all() for tag in tags]
+            questions_id = list(
+                set(
+                    [
+                        question.question_id
+                        for question_tag in question_tags
+                        for question in question_tag
+                    ]
+                )
             )
-        tags = Tag.objects.filter(name__in=tags).all()
-        question_tags = [tag.question_tags.all() for tag in tags]
-        questions_id = list(
-            set(
-                [
-                    question.question_id
-                    for question_tag in question_tags
-                    for question in question_tag
-                ]
-            )
-        )
-        questions = Question.objects.filter(is_active=True, id__in=questions_id).all()
+            questions = Question.objects.filter(
+                is_active=True, id__in=questions_id
+            ).all()
 
         # FIXME : filter_by 구현할 것.
 
@@ -155,15 +156,17 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
 
         keywords = keywords.split(" ") if keywords else None
         if not keywords:
-            return Response(
-                {"error": "Please enter keywords"}, status=status.HTTP_404_NOT_FOUND
+            questions = Question.objects.all()
+        else:
+            questions = Question.objects.filter(
+                reduce(
+                    operator.and_,
+                    (
+                        Q(content__icontains=keyword, is_active=True)
+                        for keyword in keywords
+                    ),
+                )
             )
-        questions = Question.objects.filter(
-            reduce(
-                operator.and_,
-                (Q(content__icontains=keyword, is_active=True) for keyword in keywords),
-            )
-        )
 
         # FIXME : filter_by 구현할 것.
 
