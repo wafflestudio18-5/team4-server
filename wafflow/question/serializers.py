@@ -1,8 +1,7 @@
-from django.contrib.auth.models import AnonymousUser
 from rest_framework import serializers
 
 from user.serializers import AuthorSerializer
-from question.models import Question, QuestionTag, Tag, UserQuestion
+from question.models import Question, QuestionTag, UserQuestion
 from question.constants import CONTENT_FOR_TAG_SEARCH
 
 
