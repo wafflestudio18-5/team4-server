@@ -21,7 +21,7 @@ class SimpleQuestionSerializer(serializers.ModelSerializer):
         )
 
 
-class QuestionUserSerializer(SimpleQuestionSerializer):
+class SimpleQuestionUserSerializer(SimpleQuestionSerializer):
     answer_count = serializers.SerializerMethodField()
     bookmark_count = serializers.SerializerMethodField()
 
@@ -38,15 +38,25 @@ class QuestionUserSerializer(SimpleQuestionSerializer):
         return question.user_questions.filter(bookmark=True).count()
 
 
-class QuestionSerializer(QuestionUserSerializer):
+class QuestionsUserSerializer(SimpleQuestionUserSerializer):
+    questions = serializers.SerializerMethodField()
+
+    class Meta(SimpleQuestionUserSerializer.Meta):
+        fields = ("questions",)
+
+    def get_questions(self, questions):
+        return SimpleQuestionUserSerializer(questions, many=True).data
+
+
+class QuestionSerializer(SimpleQuestionUserSerializer):
     author = serializers.SerializerMethodField()
     bookmarked = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
 
-    class Meta(QuestionUserSerializer.Meta):
-        fields = QuestionUserSerializer.Meta.fields + (
+    class Meta(SimpleQuestionUserSerializer.Meta):
+        fields = SimpleQuestionUserSerializer.Meta.fields + (
             "author",
             "bookmarked",
             "comment_count",
@@ -92,7 +102,7 @@ class QuestionInfoSerializer(QuestionSerializer):
         fields = QuestionSerializer.Meta.fields + ("content",)
 
 
-class QuestionTagSearchSerializer(QuestionSerializer):
+class SimpleQuestionTagSearchSerializer(QuestionSerializer):
     content = serializers.SerializerMethodField()
 
     class Meta(QuestionSerializer.Meta):
@@ -100,6 +110,16 @@ class QuestionTagSearchSerializer(QuestionSerializer):
 
     def get_content(self, question):
         return question.content[0:CONTENT_FOR_TAG_SEARCH]
+
+
+class QuestionsTagSearchSerializer(SimpleQuestionTagSearchSerializer):
+    questions = serializers.SerializerMethodField()
+
+    class Meta(SimpleQuestionTagSearchSerializer.Meta):
+        fields = ("questions",)
+
+    def get_questions(self, questions):
+        return SimpleQuestionTagSearchSerializer(questions, many=True).data
 
 
 class QuestionProduceSerializer(serializers.ModelSerializer):

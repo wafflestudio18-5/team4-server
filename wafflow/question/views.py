@@ -16,8 +16,8 @@ from question.serializers import (
     QuestionEditSerializer,
     QuestionInfoSerializer,
     QuestionProduceSerializer,
-    QuestionUserSerializer,
-    QuestionTagSearchSerializer,
+    QuestionsUserSerializer,
+    QuestionsTagSearchSerializer,
 )
 
 
@@ -38,8 +38,10 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return QuestionProduceSerializer
         elif self.action in ("update",):
             return QuestionEditSerializer
+        elif self.action in ("tagged",):
+            return QuestionsTagSearchSerializer
         else:
-            return QuestionSerializer
+            return QuestionInfoSerializer
 
     def create(self, request):
         user = request.user
@@ -144,13 +146,15 @@ class QuestionViewSet(viewsets.GenericViewSet):
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
             )
         return Response(
-            QuestionTagSearchSerializer(paginated_questions, many=True).data
+            self.get_serializer(
+                paginated_questions, context=self.get_serializer_context()
+            ).data
         )
 
 
 class QuestionKeywordsViewSet(viewsets.GenericViewSet):
     queryset = Question.objects.all()
-    serializer_class = QuestionTagSearchSerializer
+    serializer_class = QuestionsTagSearchSerializer
 
     def list(self, request):
         keywords = request.query_params.get("keywords")
@@ -183,13 +187,15 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
             )
         return Response(
-            QuestionTagSearchSerializer(paginated_questions, many=True).data
+            self.get_serializer(
+                paginated_questions, context=self.get_serializer_context()
+            ).data
         )
 
 
 class QuestionUserViewSet(viewsets.GenericViewSet):
     queryset = Question.objects.all()
-    serializer_class = QuestionUserSerializer
+    serializer_class = QuestionsUserSerializer
 
     def get_permissions(self):
         return (AllowAny(),)
@@ -214,7 +220,11 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
             )
-        return Response(self.get_serializer(paginated_questions, many=True).data)
+        return Response(
+            self.get_serializer(
+                paginated_questions, context=self.get_serializer_context()
+            ).data
+        )
 
 
 def sort_questions(request, questions):
