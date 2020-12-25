@@ -18,6 +18,11 @@ class RateViewSet(viewsets.GenericViewSet):
     @api_view(("PUT",))
     def rate_question(request, pk):
         user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"message": "Invalid token"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         try:
             question = Question.objects.get(id=pk)
         except Question.DoesNotExist:
@@ -51,6 +56,11 @@ class RateViewSet(viewsets.GenericViewSet):
     @api_view(("PUT",))
     def rate_answer(request, pk):
         user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"message": "Invalid token"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         try:
             answer = Answer.objects.get(id=pk)
         except Answer.DoesNotExist:
@@ -84,6 +94,11 @@ class RateViewSet(viewsets.GenericViewSet):
     @api_view(("PUT",))
     def rate_comment(request, pk):
         user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"message": "Invalid token"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         try:
             comment = Comment.objects.get(id=pk)
         except Comment.DoesNotExist:
