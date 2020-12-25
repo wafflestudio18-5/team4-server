@@ -35,9 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
         username = validated_data.get("username")
         password = validated_data.get("password")
         nickname = validated_data.pop("nickname")
-        picture = validated_data.pop("picture", None)
-        if not picture:
-            picture = ""
+        picture = validated_data.pop("picture", "")
 
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("Email already exists")
