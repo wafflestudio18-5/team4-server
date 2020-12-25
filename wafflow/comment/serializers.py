@@ -34,7 +34,10 @@ class CommentSerializer(SimpleCommentSerializer):
         return AuthorSerializer(user).data
 
     def get_rating(self, comment):
-        user = self.context["request"].user
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
         if isinstance(user, AnonymousUser):
             return 0
         try:
@@ -42,6 +45,23 @@ class CommentSerializer(SimpleCommentSerializer):
         except UserComment.DoesNotExist:
             return 0
         return user_comment.rating
+
+
+class CommentsSerializer(CommentSerializer):
+    comments = serializers.SerializerMethodField()
+
+    class Meta(CommentSerializer.Meta):
+        model = Question
+        fields = ("comments",)
+
+    def get_comments(self, comments):
+        return CommentSerializer(comments, many=True).data
+
+
+class CommentEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ("content",)
 
 
 class CommentAnswerProduceSerializer(serializers.ModelSerializer):
@@ -55,7 +75,10 @@ class CommentAnswerProduceSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        user = self.context["request"].user
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
         answer = Answer.objects.get(pk=validated_data.pop("answer_id"))
         return Comment.objects.create(
             **validated_data, user=user, answer=answer, type=Comment.ANSWER
@@ -73,14 +96,11 @@ class CommentQuestionProduceSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        user = self.context["request"].user
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
         question = Question.objects.get(pk=validated_data.pop("question_id"))
         return Comment.objects.create(
             **validated_data, user=user, question=question, type=Comment.QUESTION
         )
-
-
-class CommentEditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Comment
-        fields = ("content",)

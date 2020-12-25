@@ -8,6 +8,7 @@ from comment.serializers import (
     CommentAnswerProduceSerializer,
     CommentEditSerializer,
     CommentSerializer,
+    CommentsSerializer,
     CommentQuestionProduceSerializer,
 )
 from question.models import Question
@@ -80,7 +81,7 @@ class CommentViewSet(viewsets.GenericViewSet):
 
 class CommentAnswerViewSet(viewsets.GenericViewSet):
     queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
+    serializer_class = CommentsSerializer
 
     def get_permissions(self):
         if self.action in ("make",):
@@ -89,7 +90,7 @@ class CommentAnswerViewSet(viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         if self.action in ("retrieve",):
-            return CommentSerializer
+            return CommentsSerializer
         if self.action in ("make",):
             return CommentAnswerProduceSerializer
 
@@ -102,7 +103,11 @@ class CommentAnswerViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         comments = Comment.objects.filter(answer=answer, is_active=True)
-        return Response(self.get_serializer(comments, many=True).data)
+        return Response(
+            self.get_serializer(
+                comments, many=True, context=self.get_serializer_context()
+            ).data
+        )
 
     def make(self, request, pk=None):
         try:
@@ -135,7 +140,7 @@ class CommentQuestionViewSet(viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         if self.action in ("retrieve",):
-            return CommentSerializer
+            return CommentsSerializer
         if self.action in ("make",):
             return CommentQuestionProduceSerializer
 
@@ -148,7 +153,9 @@ class CommentQuestionViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         comments = Comment.objects.filter(question=question, is_active=True)
-        return Response(self.get_serializer(comments, many=True).data)
+        return Response(
+            self.get_serializer(comments, context=self.get_serializer_context()).data
+        )
 
     def make(self, request, pk=None):
         try:
