@@ -56,6 +56,19 @@ class PostBookmarkTestCase(BookmarkTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
+    def test_post_bookmark_question_question_id_deleted_question(self):
+        question = Question.objects.get(title="Hello")
+        question.is_active
+        question.save()
+
+        response = self.client.post(
+            f"/bookmark/question/{question.id}/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_db_count()
+
     def test_post_bookmark_question_question_id_already_bookmarked(self):
         question = Question.objects.get(title="Hello")
         eldpswp99 = User.objects.get(username="eldpswp99")
@@ -193,6 +206,19 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
 
         response = self.client.delete(
             f"/bookmark/question/-1/", HTTP_AUTHORIZATION=self.eldpswp99_token
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_db_count()
+
+    def test_delete_bookmark_question_question_id_deleted_question(self):
+        question = Question.objects.get(title="Hello")
+        question.is_active = False
+        question.save()
+
+        response = self.client.delete(
+            f"/bookmark/question/{question.id}/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

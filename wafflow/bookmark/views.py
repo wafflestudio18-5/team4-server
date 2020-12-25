@@ -16,7 +16,7 @@ class BookmarkQuestionViewSet(viewsets.GenericViewSet):
 
     def make(self, request, pk=None):
         try:
-            question = Question.objects.get(pk=pk)
+            question = Question.objects.get(pk=pk, is_active=True)
         except Question.DoesNotExist:
             return Response(
                 {"message": "There is no question with the id"},
@@ -42,7 +42,7 @@ class BookmarkQuestionViewSet(viewsets.GenericViewSet):
 
     def destroy(self, request, pk=None):
         try:
-            question = Question.objects.get(pk=pk)
+            question = Question.objects.get(pk=pk, is_active=True)
         except Question.DoesNotExist:
             return Response(
                 {"message": "There is no question with the id"},
