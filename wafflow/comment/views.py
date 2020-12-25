@@ -26,9 +26,8 @@ class CommentViewSet(viewsets.GenericViewSet):
         return (AllowAny(),)
 
     def retrieve(self, request, pk=None):
-        try:
-            comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
+        comment = Comment.objects.filter(pk=pk, is_active=True).last()
+        if not comment:
             return Response(
                 {"error": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -36,9 +35,8 @@ class CommentViewSet(viewsets.GenericViewSet):
         return Response(self.get_serializer(comment).data)
 
     def update(self, request, pk=None):
-        try:
-            comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
+        comment = Comment.objects.filter(pk=pk, is_active=True).last()
+        if not comment:
             return Response(
                 {"message": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -47,11 +45,6 @@ class CommentViewSet(viewsets.GenericViewSet):
             return Response(
                 {"message": "Not allowed to edit this comment"},
                 status=status.HTTP_403_FORBIDDEN,
-            )
-        if not comment.is_active:
-            return Response(
-                {"message": "This comment is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
 
         content = request.data.get("content", "")
@@ -64,9 +57,8 @@ class CommentViewSet(viewsets.GenericViewSet):
         )
 
     def destroy(self, request, pk=None):
-        try:
-            comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
+        comment = Comment.objects.filter(pk=pk, is_active=True).last()
+        if not comment:
             return Response(
                 {"message": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -76,9 +68,6 @@ class CommentViewSet(viewsets.GenericViewSet):
                 {"message": "Not allowed to delete this comment"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if not comment.is_active:
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
         comment.is_active = False
         comment.save()
         return Response({})
@@ -100,26 +89,18 @@ class CommentAnswerViewSet(viewsets.GenericViewSet):
             return CommentAnswerProduceSerializer
 
     def retrieve(self, request, pk=None):
-        try:
-            answer = Answer.objects.get(pk=pk)
-        except Question.DoesNotExist:
+        answer = Answer.objects.filter(pk=pk, is_active=True)
+        if not answer:
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if not answer.is_active:
-            return Response(
-                {"message": "The answer is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         comments = Comment.objects.filter(answer=answer, is_active=True)
         return Response(self.get_serializer(comments, many=True).data)
 
     def make(self, request, pk=None):
-        try:
-            answer = Answer.objects.get(pk=pk)
-        except Answer.DoesNotExist:
+        answer = Answer.objects.filter(pk=pk, is_active=True)
+        if not answer:
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -152,25 +133,18 @@ class CommentQuestionViewSet(viewsets.GenericViewSet):
             return CommentQuestionProduceSerializer
 
     def retrieve(self, request, pk=None):
-        try:
-            question = Question.objects.get(pk=pk)
-        except Question.DoesNotExist:
+        question = Question.objects.filter(pk=pk, is_active=True)
+        if not question:
             return Response(
                 {"message": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-        if not question.is_active:
-            return Response(
-                {"message": "The question is not active"},
-                status=status.HTTP_400_BAD_REQUEST,
             )
         comments = Comment.objects.filter(question=question, is_active=True)
         return Response(self.get_serializer(comments, many=True).data)
 
     def make(self, request, pk=None):
-        try:
-            question = Question.objects.get(pk=pk)
-        except Question.DoesNotExist:
+        question = Question.objects.filter(pk=pk, is_active=True)
+        if not question:
             return Response(
                 {"message": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,

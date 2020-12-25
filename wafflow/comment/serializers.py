@@ -61,7 +61,9 @@ class CommentAnswerProduceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context["request"].user
         answer = Answer.objects.get(pk=validated_data.pop("answer_id"))
-        return Comment.objects.create(**validated_data, user=user, answer=answer)
+        return Comment.objects.create(
+            **validated_data, user=user, answer=answer, type=Comment.ANSWER
+        )
 
 
 class CommentQuestionProduceSerializer(serializers.ModelSerializer):
@@ -77,7 +79,9 @@ class CommentQuestionProduceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context["request"].user
         question = Question.objects.get(pk=validated_data.pop("question_id"))
-        return Comment.objects.create(**validated_data, user=user, question=question)
+        return Comment.objects.create(
+            **validated_data, user=user, question=question, type=Comment.QUESTION
+        )
 
 
 class CommentEditSerializer(serializers.ModelSerializer):
