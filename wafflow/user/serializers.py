@@ -7,9 +7,9 @@ from user.models import UserProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True)
+    username = serializers.CharField()
     password = serializers.CharField(required=False, write_only=True)
-    email = serializers.EmailField(required=True)
+    email = serializers.EmailField()
     last_login = serializers.DateTimeField(read_only=True)
     nickname = serializers.CharField(required=False, allow_blank=True, write_only=True)
     picture = serializers.CharField(required=False, allow_blank=True, write_only=True)
@@ -58,10 +58,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, user, validated_data):
-        password = validated_data.get("password")
-        user.set_password(password)
-        user.save()
-
         userprofile = user.profile
         nickname = validated_data.pop("nickname", None)
         picture = validated_data.pop("picture", None)
@@ -101,6 +97,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class AuthorSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
+    picture = serializers.CharField(source="profile.picture")
     reputation = serializers.IntegerField(source="profile.reputation")
 
     class Meta:
@@ -108,5 +105,6 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "username",
+            "picture",
             "reputation",
         )

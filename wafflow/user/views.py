@@ -91,7 +91,7 @@ class UserViewSet(viewsets.GenericViewSet):
         data = request.data
 
         serializer = self.get_serializer(user, data=data)
-        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
         serializer.save()
 
         data = UserProfileSerializer(user.profile).data
@@ -105,7 +105,7 @@ class UserViewSet(viewsets.GenericViewSet):
             )
 
         user = request.user
-        if user.is_active == True:
+        if user.is_active:
             user.is_active = False
             user.save()
             logout(request)
