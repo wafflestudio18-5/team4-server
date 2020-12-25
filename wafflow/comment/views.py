@@ -57,12 +57,15 @@ class CommentViewSet(viewsets.GenericViewSet):
         )
 
     def destroy(self, request, pk=None):
-        comment = Comment.objects.filter(pk=pk, is_active=True).last()
-        if not comment:
+        try:
+            comment = Comment.objects.get(pk=pk)
+        except Comment.DoesNotExist:
             return Response(
                 {"message": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        if not comment.is_active:
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
         if request.user != comment.user:
             return Response(
                 {"message": "Not allowed to delete this comment"},

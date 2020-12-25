@@ -4,6 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 from answer.models import Answer
 from comment.models import Comment, UserComment
 from question.models import Question
+from user.serializers import AuthorSerializer
 
 
 class SimpleCommentSerializer(serializers.ModelSerializer):
@@ -30,12 +31,7 @@ class CommentSerializer(SimpleCommentSerializer):
 
     def get_author(self, comment):
         user = comment.user
-        return {
-            "id": user.id,
-            "username": user.username,
-            # "reputation": user.profile.reputation,
-            # "picture": user.profile.picture,
-        }
+        return AuthorSerializer(user).data
 
     def get_rating(self, comment):
         user = self.context["request"].user
