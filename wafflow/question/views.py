@@ -38,10 +38,6 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return QuestionProduceSerializer
         elif self.action in ("update",):
             return QuestionEditSerializer
-        elif self.action in ("retrieve",):
-            return QuestionInfoSerializer
-        elif self.action in ("tagged",):
-            return QuestionTagSearchSerializer
         else:
             return QuestionSerializer
 
@@ -62,44 +58,49 @@ class QuestionViewSet(viewsets.GenericViewSet):
                     QuestionTag.objects.create(question=question, tag=tag)
 
         return Response(
-            QuestionSerializer(question, context=self.get_serializer_context()).data,
+            QuestionInfoSerializer(
+                question, context=self.get_serializer_context()
+            ).data,
             status=status.HTTP_201_CREATED,
         )
 
     def retrieve(self, request, pk=None):
-        try:
-            question = Question.objects.get(pk=pk)
-        except Question.DoesNotExist:
+        question = Question.objects.filter(pk=pk, is_active=True).last()
+        if not question:
             return Response(
                 {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
         question.view_count += 1
         question.save()
-        return Response(self.get_serializer(question).data)
+        return Response(QuestionInfoSerializer(question).data)
 
     def update(self, request, pk=None):
-        user = request.user
-        try:
-            question = Question.objects.get(pk=pk)
-        except Question.DoesNotExist:
+        question = Question.objects.filter(pk=pk, is_active=True).last()
+        if not question:
             return Response(
                 {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if not question.user == user:
+        if not question.user == request.user:
             return Response(
-                {"error": "작성자만 Question을 수정할 수 있습니다."},
+                {"error": "Not allowed to edit this question"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         data = request.data.copy()
-        title = data.get("title", "")
-        content = data.get("content", "")
-        if title != "" and content != "":
-            serializer = self.get_serializer(question, data=data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+        title = data.get("title")
+        content = data.get("content")
+
+        if not title:
+            data["title"] = question.title
+        if not content:
+            data["content"] = question.content
+
+        serializer = self.get_serializer(question, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         return Response(
             QuestionInfoSerializer(question, context=self.get_serializer_context()).data
         )
@@ -139,10 +140,16 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
             )
-        return Response(self.get_serializer(paginated_questions, many=True).data)
+        print(self.get_serializer())
+        return Response(
+            QuestionTagSearchSerializer(paginated_questions, many=True).data
+        )
 
 
 class QuestionKeywordsViewSet(viewsets.GenericViewSet):
+    queryset = Question.objects.all()
+    serializer_class = QuestionTagSearchSerializer
+
     def list(self, request):
         keywords = request.query_params.get("keywords")
         filter_by = request.query_params.get("filter_by")
@@ -154,7 +161,8 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
             )
         questions = Question.objects.filter(
             reduce(
-                operator.and_, (Q(content__icontains=keyword) for keyword in keywords)
+                operator.and_,
+                (Q(content__icontains=keyword, is_active=True) for keyword in keywords),
             )
         )
 
@@ -170,7 +178,9 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
             )
-        return Response(self.get_serializer(paginated_questions, many=True).data)
+        return Response(
+            QuestionTagSearchSerializer(paginated_questions, many=True).data
+        )
 
 
 class QuestionUserViewSet(viewsets.GenericViewSet):
@@ -181,9 +191,8 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
         return (AllowAny(),)
 
     def retrieve(self, request, pk=None):
-        try:
-            user = User.objects.get(pk=pk)
-        except User.DoesNotExist:
+        user = User.objects.filter(pk=pk, is_active=True).last()
+        if not user:
             return None
         questions = Question.objects.filter(user=user, is_active=True)
 

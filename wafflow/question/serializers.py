@@ -1,6 +1,8 @@
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import serializers
 
-from question.models import Question, Tag, UserQuestion
+from user.serializers import AuthorSerializer
+from question.models import Question, QuestionTag, Tag, UserQuestion
 from question.constants import CONTENT_FOR_TAG_SEARCH
 
 
@@ -55,14 +57,13 @@ class QuestionSerializer(QuestionUserSerializer):
 
     def get_author(self, question):
         user = question.user
-        return {
-            "id": user.id,
-            "username": user.username,
-            "reputation": user.profile.reputation,
-        }
+        return AuthorSerializer(user).data
 
     def get_bookmarked(self, question):
-        user = self.context["request"].user
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
         try:
             user_question = question.user_questions.get(user=user)
         except UserQuestion.DoesNotExist:
@@ -73,7 +74,10 @@ class QuestionSerializer(QuestionUserSerializer):
         return question.comments.filter(is_active=True).count()
 
     def get_rating(self, question):
-        user = self.context["request"].user
+        user = None
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
         try:
             user_question = question.user_questions.get(user=user)
         except UserQuestion.DoesNotExist:
@@ -85,8 +89,6 @@ class QuestionSerializer(QuestionUserSerializer):
 
 
 class QuestionInfoSerializer(QuestionSerializer):
-    content = serializers.CharField(source="question.content")
-
     class Meta(QuestionSerializer.Meta):
         fields = QuestionSerializer.Meta.fields + ("content",)
 
@@ -124,15 +126,12 @@ class QuestionEditSerializer(serializers.ModelSerializer):
 
 
 class QuestionTagSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(source="question_tag.tag.id", read_only=True)
-    name = serializers.SerializerMethodField()
+    id = serializers.IntegerField(source="tag.id", read_only=True)
+    name = serializers.CharField(source="tag.name", read_only=True)
 
     class Meta:
-        model = Tag
+        model = QuestionTag
         fields = (
             "id",
             "name",
         )
-
-    def get_name(self, question_tag):
-        return Tag.objects.get(id=question_tag.tag.id).name
