@@ -34,13 +34,16 @@ class RateViewSet(viewsets.GenericViewSet):
             user=user, question=question, defaults={"rating": 0}
         )
 
-        rating = int(request.data.get("rating", 0))
-        prev_rating = userquestion.rating
-        if prev_rating == 0:
-            userquestion.rating = rating
-        elif rating != 0:
-            userquestion.rating = 0
-        question.vote += userquestion.rating - prev_rating
+        rating = request.data.get("rating")
+        if not rating:
+            return Response(
+                {"message": "Validation Error: Rating required!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        rating = int(rating)
+        question.vote += rating - userquestion.rating
+        userquestion.rating = rating
 
         question.save()
         userquestion.save()
@@ -77,13 +80,16 @@ class RateViewSet(viewsets.GenericViewSet):
             user=user, answer=answer, defaults={"rating": 0}
         )
 
-        rating = int(request.data.get("rating", 0))
-        prev_rating = useranswer.rating
-        if prev_rating == 0:
-            useranswer.rating = rating
-        elif rating != 0:
-            useranswer.rating = 0
-        answer.vote += useranswer.rating - prev_rating
+        rating = request.data.get("rating")
+        if not rating:
+            return Response(
+                {"message": "Validation Error: Rating required!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        rating = int(rating)
+        answer.vote += rating - useranswer.rating
+        useranswer.rating = rating
 
         answer.save()
         useranswer.save()
@@ -120,13 +126,16 @@ class RateViewSet(viewsets.GenericViewSet):
             user=user, comment=comment, defaults={"rating": 0}
         )
 
-        rating = int(request.data.get("rating", 0))
-        prev_rating = usercomment.rating
-        if prev_rating == 0:
-            usercomment.rating = rating
-        elif rating != 0:
-            usercomment.rating = 0
-        comment.vote += usercomment.rating - prev_rating
+        rating = request.data.get("rating")
+        if not rating:
+            return Response(
+                {"message": "Validation Error: Rating required!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        rating = int(rating)
+        comment.vote += rating - usercomment.rating
+        usercomment.rating = rating
 
         comment.save()
         usercomment.save()
