@@ -10,11 +10,6 @@ from comment.models import UserComment, Comment
 
 
 class RateViewSet(viewsets.GenericViewSet):
-    permission_classes = (IsAuthenticated(),)
-
-    def get_permissions(self):
-        return self.permission_classes
-
     @api_view(("PUT",))
     def rate_question(request, pk):
         user = request.user
@@ -24,7 +19,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         try:
-            question = Question.objects.get(id=pk)
+            question = Question.objects.get(id=pk, is_active=True)
         except Question.DoesNotExist:
             return Response(
                 {"message": "There is no question with the id"},
@@ -62,7 +57,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         try:
-            answer = Answer.objects.get(id=pk)
+            answer = Answer.objects.get(id=pk, is_active=True)
         except Answer.DoesNotExist:
             return Response(
                 {"message": "There is no answer with the id"},
@@ -100,7 +95,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         try:
-            comment = Comment.objects.get(id=pk)
+            comment = Comment.objects.get(id=pk, is_active=True)
         except Comment.DoesNotExist:
             return Response(
                 {"message": "There is no comment with the id"},
