@@ -35,6 +35,7 @@ class UserQuestion(models.Model):
     question = models.ForeignKey(
         Question, related_name="user_questions", on_delete=models.CASCADE
     )
+    bookmark_at = models.DateTimeField(null=True)
 
 
 class Tag(models.Model):
