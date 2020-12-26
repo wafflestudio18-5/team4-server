@@ -10,4 +10,5 @@ urlpatterns = [
     path("", include("comment.urls")),
     path("", include("user.urls")),
     path("", include("bookmark.urls")),
+    path("", include("rate.urls")),
 ]

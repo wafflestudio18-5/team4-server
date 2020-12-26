@@ -26,7 +26,7 @@ class AnswerUserViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            user = User.objects.get(pk=pk)
+            user = User.objects.get(pk=pk, is_active=True)
         except User.DoesNotExist:
             return Response(
                 {"message": "There is no user with the given ID"},
@@ -90,7 +90,7 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            question = Question.objects.get(pk=pk)
+            question = Question.objects.get(pk=pk, is_active=True)
         except Question.DoesNotExist:
             return Response(
                 {"message": "There is no question with the given ID"},
@@ -137,13 +137,14 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
 
     def make(self, request, pk=None):
         try:
-            question = Question.objects.get(pk=pk)
+            question = Question.objects.get(pk=pk, is_active=True)
         except Question.DoesNotExist:
             return Response(
                 {"message": "There is no question with the given id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        data = request.data
+
+        data = request.data.copy()
         data["question_id"] = pk
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -183,7 +184,7 @@ class AnswerViewSet(viewsets.GenericViewSet):
 
     def update(self, request, pk=None):
         try:
-            answer = Answer.objects.get(pk=pk)
+            answer = Answer.objects.get(pk=pk, is_active=True)
         except Answer.DoesNotExist:
             return Response(
                 {"message": "There is no answer with the given ID"},
@@ -230,14 +231,14 @@ class AnswerViewSet(viewsets.GenericViewSet):
     @action(methods=["DELETE", "POST"], detail=True)
     def acception(self, request, pk=None):
         try:
-            answer = Answer.objects.get(pk=pk)
+            answer = Answer.objects.get(pk=pk, is_active=True)
         except Answer.DoesNotExist:
             return Response(
                 {"message": "There is no answer with the given id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if request.user != answer.user:
+        if request.user != answer.question.user:
             return Response(
                 {"message": "Not allowed to change acception of this answer"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -254,6 +255,13 @@ class AnswerViewSet(viewsets.GenericViewSet):
         question = answer.question
         question.has_accepted = is_accepted
         question.save()
+
+        answer_user_profile = answer.user.profile
+        question_user_profile = question.user.profile
+        question_user_profile.reputation += 2 * (1 if is_accepted else -1)
+        answer_user_profile.reputation += 15 * (1 if is_accepted else -1)
+        answer_user_profile.save()
+        question_user_profile.save()
 
     def post_acception(self, request, answer):
         if answer.question.has_accepted:

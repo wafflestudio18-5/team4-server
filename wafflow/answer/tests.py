@@ -292,9 +292,18 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
 
     def test_get_answer_user_user_id_invalid_sorted_by(self):
         user = User.objects.get(username="eldpswp99")
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=asdf&page={1}/")
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=asdf&page={1}")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+    def test_get_answer_user_user_id_deleted_user(self):
+        user = User.objects.get(username="eldpswp99")
+        user.is_active = False
+        user.save()
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page={1}")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def test_get_answer_user_user_id_invalid_page(self):
@@ -475,6 +484,17 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
 
     def test_get_answer_question_question_id_invalid_id(self):
         response = self.client.get(f"/answer/question/{-1}/?sorted_by=votes&page=1")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_db_count()
+
+    def test_get_answer_question_question_id_deleted_question(self):
+        question = Question.objects.get(title="Hello")
+        question.is_active = False
+        question.save()
+
+        response = self.client.get(
+            f"/answer/question/{question.id}/?sorted_by=votes&page=1"
+        )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -829,6 +849,21 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
+    def post_answer_question_question_id_deleted_question(self):
+        question = Question.objects.get(title="Hello")
+        question.is_active = False
+        question.save()
+
+        response = self.client.post(
+            f"/answer/question/{question.id}/",
+            json.dumps({"content": "world"}),
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_db_count()
+
     def post_answer_question_question_id_invalid_content(self):
         question = Question.objects.get(title="Hello")
 
@@ -926,6 +961,20 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
     def test_put_answer_answer_id_invalid_id(self):
         response = self.client.put(
             f"/answer/-1/",
+            json.dumps({"content": "asdf"}),
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_put_answer_answer_id_deleted_answer(self):
+        answer = Answer.objects.get(content="world")
+        answer.is_active = False
+        answer.save()
+
+        response = self.client.put(
+            f"/answer/{answer.id}/",
             json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -1033,7 +1082,9 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         deleted_answer_count = kwargs.get("deleted_answer_count", 0)
 
         super().check_db_count(answer_count=answer_count)
-        Answer.objects.filter(is_active=False).count()
+        self.assertEqual(
+            Answer.objects.filter(is_active=False).count(), deleted_answer_count
+        )
 
     def setUp(self):
         self.set_up_user_question()
@@ -1088,6 +1139,18 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         self.assertEqual(answer.is_active, False)
         self.check_db_count(deleted_answer_count=1)
 
+    def test_delete_answer_answer_id_deleted_answer(self):
+        answer = Answer.objects.get(content="world")
+        answer.is_active = False
+        answer.save()
+
+        response = self.client.delete(
+            f"/answer/{answer.id}/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
     def test_delete_answer_answer_id_twice(self):
         answer = Answer.objects.get(content="world")
 
@@ -1138,13 +1201,17 @@ class AnswerAcceptionTestCase(UserQuestionTestSetting):
 
     def setUp(self):
         self.set_up_user_question()
-        eldpswp99 = User.objects.get(username="eldpswp99")
+        qwerty = User.objects.get(username="qwerty")
         question = Question.objects.get(title="Hello")
 
         for answer in range(2):
-            Answer.objects.create(
-                user=eldpswp99, question=question, content=str(answer)
-            )
+            Answer.objects.create(user=qwerty, question=question, content=str(answer))
+
+    def check_reputation(self, eldpswp99_reputation=0, qwerty_reputation=1234):
+        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(eldpswp99_profile.reputation, eldpswp99_reputation)
+        qwerty_profile = User.objects.get(username="qwerty").profile
+        self.assertEqual(qwerty_profile.reputation, qwerty_reputation)
 
 
 class PostAcceptionTestCase(AnswerAcceptionTestCase):
@@ -1164,6 +1231,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.check_db_count()
+        self.check_reputation()
 
     def test_post_answer_answer_id_acception_invalid_id(self):
         response = self.client.post(
@@ -1172,6 +1240,20 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_reputation()
+
+    def test_post_answer_answer_id_acception_deleted_answer(self):
+        answer = Answer.objects.get(content="0")
+        answer.is_active = False
+        answer.save()
+
+        response = self.client.post(
+            f"/answer/{answer.id}/acception/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_reputation()
 
     def test_post_answer_answer_id_acception_not_allowed_user(self):
         answer = Answer.objects.get(content="0")
@@ -1183,6 +1265,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.check_db_count()
+        self.check_reputation()
 
     def test_post_answer_answer_id_acception_already_accepted(self):
         answer = Answer.objects.get(content="0")
@@ -1191,6 +1274,12 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
         question.has_accepted = True
         question.save()
+        answer_user_profile = answer.user.profile
+        question_user_profile = question.user.profile
+        question_user_profile.reputation += 2
+        answer_user_profile.reputation += 15
+        answer_user_profile.save()
+        question_user_profile.save()
 
         response = self.client.post(
             f"/answer/{answer.id}/acception/",
@@ -1199,6 +1288,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
+        self.check_reputation(eldpswp99_reputation=2, qwerty_reputation=1249)
 
     def test_post_answer_answer_id_acception_twice(self):
         answer = Answer.objects.get(content="0")
@@ -1216,6 +1306,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["has_accepted"], True)
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], True)
+        self.check_reputation(eldpswp99_reputation=2, qwerty_reputation=1249)
 
         response = self.client.post(
             f"/answer/{answer.id}/acception/",
@@ -1223,12 +1314,41 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        eldpswp99_profile = User.objects.get(username="eldpswp99").profile
 
         self.check_db_count()
+        self.check_reputation(eldpswp99_reputation=2, qwerty_reputation=1249)
+
+    def test_post_answer_answer_id_acception(self):
+        answer = Answer.objects.get(content="0")
+        eldpswp99_profile = answer.question.user.profile
+        eldpswp99_profile.reputation = 123
+        eldpswp99_profile.save()
+        question = answer.question
+
+        response = self.client.post(
+            f"/answer/{answer.id}/acception/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["question_id"], question.id)
+        self.assertEqual(data["has_accepted"], True)
+        self.assertEqual(data["answer_id"], answer.id)
+        self.assertEqual(data["is_accepted"], True)
+        self.check_reputation(eldpswp99_reputation=125, qwerty_reputation=1249)
 
 
 class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
     client = Client()
+
+    def check_reputation(self, eldpswp99_reputation=2, qwerty_reputation=1249):
+        super().check_reputation(
+            eldpswp99_reputation=eldpswp99_reputation,
+            qwerty_reputation=qwerty_reputation,
+        )
 
     def setUp(self):
         super().setUp()
@@ -1238,6 +1358,12 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
         question.has_accepted = True
         question.save()
+        answer_user_profile = answer.user.profile
+        answer_user_profile.reputation += 15
+        answer_user_profile.save()
+        question_user_profile = question.user.profile
+        question_user_profile.reputation += 2
+        question_user_profile.save()
 
     def test_delete_answer_answer_id_accpetion_invalid_token(self):
         answer = Answer.objects.get(content="0")
@@ -1253,6 +1379,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.check_db_count()
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_invalid_id(self):
         response = self.client.delete(
@@ -1261,6 +1388,20 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_reputation()
+
+    def test_delete_answer_answer_id_acception_deleted_answer(self):
+        answer = Answer.objects.get(content="0")
+        answer.is_active = False
+        answer.save()
+
+        response = self.client.delete(
+            f"/answer/{answer.id}/acception/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_not_allowed_user(self):
         answer = Answer.objects.get(content="0")
@@ -1272,6 +1413,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.check_db_count()
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_not_accepted(self):
         answer = Answer.objects.get(content="1")
@@ -1283,6 +1425,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
+        self.check_reputation()
 
     def test_delete_answer_answer_id_acception_twice(self):
         answer = Answer.objects.get(content="0")
@@ -1301,6 +1444,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         self.assertEqual(data["answer_id"], answer.id)
         self.assertEqual(data["is_accepted"], False)
 
+        self.check_reputation(eldpswp99_reputation=0, qwerty_reputation=1234)
         response = self.client.delete(
             f"/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
@@ -1308,4 +1452,29 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+        user_profile = User.objects.get(username="eldpswp99").profile
+        self.assertEqual(user_profile.reputation, 0)
         self.check_db_count()
+        self.check_reputation(eldpswp99_reputation=0, qwerty_reputation=1234)
+
+    def test_delete_answer_answer_id_acception(self):
+        answer = Answer.objects.get(content="0")
+        question = answer.question
+        user_profile = answer.user.profile
+        user_profile.reputation = 123
+        user_profile.save()
+
+        response = self.client.delete(
+            f"/answer/{answer.id}/acception/",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        data = response.json()
+        self.assertEqual(data["question_id"], question.id)
+        self.assertEqual(data["has_accepted"], False)
+        self.assertEqual(data["answer_id"], answer.id)
+        self.assertEqual(data["is_accepted"], False)
+
+        self.check_reputation(eldpswp99_reputation=0, qwerty_reputation=108)
