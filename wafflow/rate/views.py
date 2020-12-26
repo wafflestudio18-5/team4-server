@@ -30,7 +30,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "Not allowed to rate this question"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        userquestion, created = UserQuestion.objects.get_or_create(
+        user_question, created = UserQuestion.objects.get_or_create(
             user=user, question=question, defaults={"rating": 0}
         )
 
@@ -42,17 +42,17 @@ class RateViewSet(viewsets.GenericViewSet):
             )
 
         rating = int(rating)
-        question.vote += rating - userquestion.rating
-        userquestion.rating = rating
+        question.vote += rating - user_question.rating
+        user_question.rating = rating
 
         question.save()
-        userquestion.save()
+        user_question.save()
 
         data = {
             "user_id": user.id,
             "question_id": question.id,
             "vote": question.vote,
-            "rating": userquestion.rating,
+            "rating": user_question.rating,
         }
         return Response(data, status=status.HTTP_200_OK)
 
@@ -76,7 +76,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "Not allowed to rate this answer"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        useranswer, created = UserAnswer.objects.get_or_create(
+        user_answer, created = UserAnswer.objects.get_or_create(
             user=user, answer=answer, defaults={"rating": 0}
         )
 
@@ -88,17 +88,17 @@ class RateViewSet(viewsets.GenericViewSet):
             )
 
         rating = int(rating)
-        answer.vote += rating - useranswer.rating
-        useranswer.rating = rating
+        answer.vote += rating - user_answer.rating
+        user_answer.rating = rating
 
         answer.save()
-        useranswer.save()
+        user_answer.save()
 
         data = {
             "user_id": user.id,
             "answer_id": answer.id,
             "vote": answer.vote,
-            "rating": useranswer.rating,
+            "rating": user_answer.rating,
         }
         return Response(data, status=status.HTTP_200_OK)
 
@@ -122,7 +122,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "Not allowed to rate this comment"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        usercomment, created = UserComment.objects.get_or_create(
+        user_comment, created = UserComment.objects.get_or_create(
             user=user, comment=comment, defaults={"rating": 0}
         )
 
@@ -134,16 +134,16 @@ class RateViewSet(viewsets.GenericViewSet):
             )
 
         rating = int(rating)
-        comment.vote += rating - usercomment.rating
-        usercomment.rating = rating
+        comment.vote += rating - user_comment.rating
+        user_comment.rating = rating
 
         comment.save()
-        usercomment.save()
+        user_comment.save()
 
         data = {
             "user_id": user.id,
             "comment_id": comment.id,
             "vote": comment.vote,
-            "rating": usercomment.rating,
+            "rating": user_comment.rating,
         }
         return Response(data, status=status.HTTP_200_OK)
