@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage
 
 from question.models import UserQuestion, Question
-from bookmark.serializers import SimpleBookmarkSerializer
+from bookmark.serializers import SimpleBookmarkSerializer, BookmarkQuestionSerializer
 from bookmark.constants import *
 
 
@@ -98,16 +98,17 @@ class BookmarkUserViewSet(viewsets.GenericViewSet):
 
         page = int(request.query_params.get("page"))
         user_questions_all = UserQuestion.objects.filter(
-            user=request.user, bookmark=True
+            user=request.user, bookmark=True, question__is_active=True
         )
-        questions_all = Question.objects.filter(
-            is_active=True,
-            user_questions__in=self.sorted_by_queryset(user_questions_all, sorted_by),
-        )
-        paginator = Paginator(questions_all, BOOKMARK_PER_PAGE)
+
+        user_questions_all = self.sorted_by_queryset(user_questions_all, sorted_by)
+        paginator = Paginator(user_questions_all, BOOKMARK_PER_PAGE)
 
         try:
-            questions_all = paginator.page(page)
+            user_questions = paginator.page(page)
+            questions = list(
+                map(lambda user_question: user_question.question, user_questions)
+            )
         except EmptyPage:
             return Response(
                 {
@@ -116,4 +117,6 @@ class BookmarkUserViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # return Response({"questions":Ques})
+        return Response(
+            {"questions": BookmarkQuestionSerializer(questions, many=True).data}
+        )
