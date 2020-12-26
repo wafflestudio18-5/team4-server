@@ -403,6 +403,12 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
         )
         self.assertEqual(resopnse.status_code, status.HTTP_400_BAD_REQUEST)
 
+        resopnse = self.client.get(
+            f"/bookmark/user/me/?sorted_by=votes",
+            HTTP_AUTHORIZATION=self.eldpswp99_token,
+        )
+        self.assertEqual(resopnse.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_get_bookmark_user_me_invalid_sorted_by(self):
         resopnse = self.client.get(
             f"/bookmark/user/me/?sorted_by=asfd&page=1",

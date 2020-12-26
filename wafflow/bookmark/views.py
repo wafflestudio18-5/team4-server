@@ -89,14 +89,15 @@ class BookmarkUserViewSet(viewsets.GenericViewSet):
             )
 
         sorted_by = request.query_params.get("sorted_by")
+        page = request.query_params.get("page")
 
-        if not (sorted_by in (VOTE, ACTIVITY, NEWEST, ADDED, VIEWS)):
+        if not (sorted_by in (VOTE, ACTIVITY, NEWEST, ADDED, VIEWS)) or page is None:
             return Response(
                 {"message": "Invalid sorted_by or page"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        page = int(request.query_params.get("page"))
+        page = int(page)
         user_questions_all = UserQuestion.objects.filter(
             user=request.user, bookmark=True, question__is_active=True
         )
