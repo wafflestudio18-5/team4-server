@@ -317,6 +317,10 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
     def test_get_answer_user_user_id_sorted_by_votes(self):
@@ -514,6 +518,9 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         response = self.client.get(
             f"/answer/question/{question.id}/?sorted_by=votes&page=9999"
         )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.get(f"/answer/question/{question.id}/?sorted_by=votes")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
