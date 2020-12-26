@@ -35,12 +35,12 @@ class RateViewSet(viewsets.GenericViewSet):
         )
 
         rating = int(request.data.get("rating", 0))
-        if userquestion.rating == 0:
+        prev_rating = userquestion.rating
+        if prev_rating == 0:
             userquestion.rating = rating
-            question.vote += rating
         elif rating != 0:
-            question.vote -= userquestion.rating
             userquestion.rating = 0
+        question.vote += userquestion.rating - prev_rating
 
         question.save()
         userquestion.save()
@@ -78,12 +78,12 @@ class RateViewSet(viewsets.GenericViewSet):
         )
 
         rating = int(request.data.get("rating", 0))
-        if useranswer.rating == 0:
+        prev_rating = useranswer.rating
+        if prev_rating == 0:
             useranswer.rating = rating
-            answer.vote += rating
         elif rating != 0:
-            answer.vote -= useranswer.rating
             useranswer.rating = 0
+        answer.vote += useranswer.rating - prev_rating
 
         answer.save()
         useranswer.save()
@@ -121,12 +121,12 @@ class RateViewSet(viewsets.GenericViewSet):
         )
 
         rating = int(request.data.get("rating", 0))
-        if usercomment.rating == 0:
+        prev_rating = usercomment.rating
+        if prev_rating == 0:
             usercomment.rating = rating
-            usercomment.vote += rating
         elif rating != 0:
-            usercomment.vote -= usercomment.rating
             usercomment.rating = 0
+        comment.vote += usercomment.rating - prev_rating
 
         comment.save()
         usercomment.save()
