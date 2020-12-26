@@ -9,4 +9,5 @@ urlpatterns = [
     path("", include("question.urls")),
     path("", include("comment.urls")),
     path("", include("user.urls")),
+    path("", include("rate.urls")),
 ]
