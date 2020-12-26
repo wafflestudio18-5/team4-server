@@ -33,14 +33,8 @@ class RateViewSet(viewsets.GenericViewSet):
         userquestion, created = UserQuestion.objects.get_or_create(
             user=user, question=question, defaults={"rating": 0}
         )
-        rating = request.data.get("rating")
-        if not rating:
-            return Response(
-                {"message": "Validation Error: Rating required!"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-        rating = int(rating)
+        rating = int(request.data.get("rating", 0))
         if userquestion.rating == 0:
             userquestion.rating = rating
             question.vote += rating
@@ -82,14 +76,8 @@ class RateViewSet(viewsets.GenericViewSet):
         useranswer, created = UserAnswer.objects.get_or_create(
             user=user, answer=answer, defaults={"rating": 0}
         )
-        rating = request.data.get("rating")
-        if not rating:
-            return Response(
-                {"message": "Validation Error: Rating required!"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-        rating = int(rating)
+        rating = int(request.data.get("rating", 0))
         if useranswer.rating == 0:
             useranswer.rating = rating
             answer.vote += rating
@@ -131,14 +119,8 @@ class RateViewSet(viewsets.GenericViewSet):
         usercomment, created = UserComment.objects.get_or_create(
             user=user, comment=comment, defaults={"rating": 0}
         )
-        rating = request.data.get("rating")
-        if not rating:
-            return Response(
-                {"message": "Validation Error: Rating required!"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
-        rating = int(rating)
+        rating = int(request.data.get("rating", 0))
         if usercomment.rating == 0:
             usercomment.rating = rating
             usercomment.vote += rating
