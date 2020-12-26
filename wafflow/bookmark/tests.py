@@ -21,7 +21,7 @@ class BookmarkTestCase(UserQuestionTestSetting):
         self.assertIn("bookmarked", data)
 
     def check_db_count(self, **kwargs):
-        user_question_count = kwargs.get("user_question", 0)
+        user_question_count = kwargs.get("user_question_count", 0)
 
         super().check_db_count()
         self.assertEqual(UserQuestion.objects.all().count(), user_question_count)
@@ -58,7 +58,7 @@ class PostBookmarkTestCase(BookmarkTestCase):
 
     def test_post_bookmark_question_question_id_deleted_question(self):
         question = Question.objects.get(title="Hello")
-        question.is_active
+        question.is_active = False
         question.save()
 
         response = self.client.post(
@@ -165,10 +165,10 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
     client = Client()
 
     def check_db_count(self, **kwargs):
-        user_question = kwargs.get("user_question", 1)
+        user_question_count = kwargs.get("user_question_count", 1)
         bookmark_count = kwargs.get("bookmark_count", 1)
 
-        super().check_db_count(user_question=user_question)
+        super().check_db_count(user_question=user_question_count)
         self.assertEqual(
             UserQuestion.objects.filter(
                 bookmark=True, question__is_active=True
@@ -484,7 +484,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
 
     def test_get_bookmark_user_me_sorted_by_votes(self):
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_votes&page=1",
+            f"/bookmark/user/me/?sorted_by=votes&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -502,7 +502,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
             vote -= 1
 
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_votes&page=2",
+            f"/bookmark/user/me/?sorted_by=votes&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -526,7 +526,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
         question.save()
 
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_activity&page=1",
+            f"/bookmark/user/me/?sorted_by=activity&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -555,7 +555,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
                 vote -= 1
 
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_activity&page=2",
+            f"/bookmark/user/me/?sorted_by=activity&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -574,7 +574,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
 
     def test_get_bookmark_user_me_sorted_by_newest(self):
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_newest&page=1",
+            f"/bookmark/user/me/?sorted_by=newest&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -595,7 +595,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
             vote -= 1
 
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_newest&page=2",
+            f"/bookmark/user/me/?sorted_by=newest&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -614,7 +614,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
 
     def test_get_bookmark_user_me_sorted_by_view_count(self):
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_view_count&page=1",
+            f"/bookmark/user/me/?sorted_by=view_count&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -632,7 +632,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
             vote += 1
 
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_view_count&page=2",
+            f"/bookmark/user/me/?sorted_by=view_count&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -651,7 +651,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
 
     def test_get_bookmark_user_me_sorted_by_added(self):
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_added&page=1",
+            f"/bookmark/user/me/?sorted_by=added&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -676,7 +676,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
                 vote = self.QUESTION_COUNT
 
         response = self.client.get(
-            f"/bookmark/user/me/sorted_by_added&page=2",
+            f"/bookmark/user/me/?sorted_by=added&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 

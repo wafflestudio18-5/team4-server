@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from question.models import UserQuestion
+from question.serializers import SimpleQuestionUserSerializer, QuestionTagSerializer
+from user.serializers import AuthorSerializer
 
 
 class SimpleBookmarkSerializer(serializers.ModelSerializer):
@@ -17,3 +19,17 @@ class SimpleBookmarkSerializer(serializers.ModelSerializer):
         return UserQuestion.objects.filter(
             question=question, bookmark=True, question__is_active=True
         ).count()
+
+
+class BookmarkQuestionSerializer(SimpleQuestionUserSerializer):
+    tags = serializers.SerializerMethodField()
+    author = serializers.SerializerMethodField()
+
+    class Meta(SimpleQuestionUserSerializer.Meta):
+        fields = SimpleQuestionUserSerializer.Meta.fields + ("tags", "author")
+
+    def get_tags(self, question):
+        return QuestionTagSerializer(question.question_tags, many=True).data
+
+    def get_author(self, question):
+        return AuthorSerializer(question.user).data
