@@ -2,7 +2,7 @@ from rest_framework import serializers
 from answer.models import Answer, UserAnswer
 from django.contrib.auth.models import AnonymousUser
 
-# from user.serializers import SimpleUserSerializer
+from user.serializers import AuthorSerializer
 from question.models import Question
 
 
@@ -44,12 +44,8 @@ class AnswerInfoSerializer(SimpleAnswerSerializer):
 
     def get_author(self, answer):
         user = answer.user
-        return {
-            "id": user.id,
-            "username": user.username,
-            "reputation": user.profile.reputation,
-        }
-        # return SimpleUserSerializer(user).data
+
+        return AuthorSerializer(user).data
 
     def get_comment_count(self, answer):
         return answer.comments.filter(is_active=True).count()
