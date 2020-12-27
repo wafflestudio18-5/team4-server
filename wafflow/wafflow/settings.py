@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 from pathlib import Path
+import json
 import os
+
+ENV_MODE = os.getenv("MODE", "dev")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,112 +23,142 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'b%_g4tci#1^@1izfge*%!r!^^5=eej!vzj1hca=zvn!d6+ksi3'
+secret_file = os.path.join(os.path.dirname(__file__), "secret_info.json")
+if os.path.exists(secret_file):
+    with open(secret_file) as f:
+        secret_info = json.loads(f.read())
+else:
+    raise Exception("Check your 'secret_info.json' file!")
+SECRET_KEY = secret_info["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if ENV_MODE != "prod":
+    DEBUG = True
+DEBUG_TOOLBAR = os.getenv("DEBUG_TOOLBAR") in ("true", "True")
 # DEBUG = os.getenv('DEBUG') in ('true', 'True', 'TRUE')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    ".amazonaws.com",
+    "localhost",
+    "127.0.0.1",
+    "13.209.15.197",  # Public IPv4 Address for AWS EC2 Instance
+]
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'answer.apps.AnswerConfig',
-    'bookmark.apps.BookmarkConfig',
-    'comment.apps.CommentConfig',
-    'question.apps.QuestionConfig',
-    'rate.apps.RateConfig',
-    'user.apps.UserConfig'
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "answer.apps.AnswerConfig",
+    "bookmark.apps.BookmarkConfig",
+    "comment.apps.CommentConfig",
+    "question.apps.QuestionConfig",
+    "rate.apps.RateConfig",
+    "user.apps.UserConfig",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.TokenAuthentication",
     )
 }
 
-DEBUG_TOOLBAR = os.getenv('DEBUG_TOOLBAR') in ('true', 'True', 'TRUE')
+DEBUG_TOOLBAR = os.getenv("DEBUG_TOOLBAR") in ("true", "True", "TRUE")
 
 if DEBUG_TOOLBAR:
-    INSTALLED_APPS.append('debug_toolbar')
-    MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
-    INTERNAL_IPS = ('127.0.0.1',)
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
+    INTERNAL_IPS = ("127.0.0.1",)
 
 
-ROOT_URLCONF = 'wafflow.urls'
+ROOT_URLCONF = "wafflow.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'wafflow.wsgi.application'
+WSGI_APPLICATION = "wafflow.wsgi.application"
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'wafflow',
-        'USER': 'wafflow',
-        'PASSWORD': 'wafflow-backend',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
-    }
-}
+if os.path.exists(secret_file):
+    print(f"#### MODE : {ENV_MODE} ####")
+    if ENV_MODE == "prod":
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "HOST": secret_info["DATABASE_HOST"],
+                "PORT": secret_info["DATABASE_PORT"],
+                "NAME": secret_info["DATABASE_NAME"],
+                "USER": secret_info["DATABASE_USER"],
+                "PASSWORD": secret_info["DATABASE_PASSWORD"],
+            }
+        }
+    else:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "HOST": "127.0.0.1",
+                "PORT": secret_info["DATABASE_PORT"],
+                "NAME": secret_info["DATABASE_NAME"],
+                "USER": secret_info["DATABASE_USER"],
+                "PASSWORD": secret_info["DATABASE_PASSWORD"],
+            }
+        }
+else:
+    raise Exception("Check your 'secret_info.json' file!")
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -136,4 +169,4 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
