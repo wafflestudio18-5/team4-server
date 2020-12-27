@@ -66,7 +66,7 @@ class GetAnswerInfoTestCase(UserQuestionTestSetting):
 
         author = data["author"]
         self.assertIn("id", author)
-        self.assertIn("username", author)
+        self.assertIn("nickname", author)
         self.assertIn("reputation", author)
 
 
@@ -174,7 +174,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         self.assertEqual(data["rating"], 0)
 
         author = data["author"]
-        self.assertEqual(author["username"], "eldpswp99")
+        self.assertEqual(author["nickname"], "MyungHoon Park")
         self.assertEqual(author["reputation"], 0)
 
         self.assertEqual(data["comment_count"], 1)
@@ -222,7 +222,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         self.assertEqual(data["rating"], 0)
 
         author = data["author"]
-        self.assertEqual(author["username"], "qwerty")
+        self.assertEqual(author["nickname"], "example")
         self.assertEqual(author["reputation"], 1234)
         self.assertEqual(data["comment_count"], 3)
 
@@ -260,7 +260,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         self.assertEqual(data["rating"], 1)
 
         author = data["author"]
-        self.assertEqual(author["username"], "eldpswp99")
+        self.assertEqual(author["nickname"], "MyungHoon Park")
         self.assertEqual(author["reputation"], 0)
         self.assertEqual(data["comment_count"], 1)
 
@@ -579,7 +579,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             self.assertEqual(answer["rating"], 1 if vote == 1 else 0)
             self.assertEqual(answer["comment_count"], 3 if vote == 1 else 0)
             author = answer["author"]
-            self.assertEqual(author["username"], "eldpswp99")
+            self.assertEqual(author["nickname"], "MyungHoon Park")
             self.assertEqual(author["reputation"], 35)
             vote -= 1
 
@@ -601,7 +601,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             self.assertEqual(answer["rating"], 0)
             self.assertEqual(answer["comment_count"], 0)
             author = answer["author"]
-            self.assertEqual(author["username"], "eldpswp99")
+            self.assertEqual(author["nickname"], "MyungHoon Park")
             self.assertEqual(author["reputation"], 35)
             vote -= 1
 
@@ -666,7 +666,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
                 self.assertEqual(answer["rating"], 0)
 
             author = answer["author"]
-            self.assertEqual(author["username"], "eldpswp99")
+            self.assertEqual(author["nickname"], "MyungHoon Park")
             self.assertEqual(author["reputation"], 123)
             self.assertEqual(
                 answer["is_accepted"],
@@ -694,7 +694,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             self.assertEqual(answer["rating"], 0)
             self.assertEqual(answer["comment_count"], 0)
             author = answer["author"]
-            self.assertEqual(author["username"], "eldpswp99")
+            self.assertEqual(author["nickname"], "MyungHoon Park")
             self.assertEqual(author["reputation"], 123)
 
             vote -= 1
@@ -753,7 +753,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
 
             author = answer["author"]
             self.assertEqual(answer["comment_count"], 0)
-            self.assertEqual(author["username"], "eldpswp99")
+            self.assertEqual(author["nickname"], "MyungHoon Park")
             self.assertEqual(author["reputation"], 0)
             self.assertEqual(
                 answer["is_accepted"],
@@ -782,7 +782,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             self.assertEqual(answer["comment_count"], 0 if vote != NEW_VOTE else 1)
             author = answer["author"]
             self.assertEqual(
-                author["username"], "eldpswp99" if vote != NEW_VOTE else "qwerty"
+                author["nickname"], "MyungHoon Park" if vote != NEW_VOTE else "example"
             )
             self.assertEqual(author["reputation"], 0 if vote != NEW_VOTE else 100)
             vote += 1

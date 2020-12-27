@@ -123,15 +123,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class AuthorSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
     picture = serializers.CharField(source="profile.picture")
     reputation = serializers.IntegerField(source="profile.reputation")
+    nickname = serializers.CharField(source="profile.nickname")
 
     class Meta:
         model = User
         fields = (
             "id",
-            "username",
+            "nickname",
             "picture",
             "reputation",
         )
