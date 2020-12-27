@@ -460,7 +460,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
         author = question["author"]
         tags = question["tags"]
         self.assertIn("id", author)
-        self.assertIn("username", author)
+        self.assertIn("nickname", author)
         self.assertIn("reputation", author)
         self.assertIn("picture", author)
 
@@ -488,7 +488,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
             True if view_count == self.ANSWSER_VIEW_COUNT else False,
         )
         author = question["author"]
-        self.assertEqual(author["username"], "eldpswp99")
+        self.assertEqual(author["nickname"], "MyungHoon Park")
         self.assertEqual(author["reputation"], 0)
         self.assertEqual(
             len(question["tags"]), 1 if view_count == self.ANSWSER_VIEW_COUNT else 0

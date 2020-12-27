@@ -258,7 +258,10 @@ def sort_user_questions(request, questions):
 
 
 def paginate_questions(request, questions):
-    page = int(request.query_params.get("page"))
+    page = request.query_params.get("page")
+
+    if page is None:
+        return None
     paginator = Paginator(questions, QUESTION_PER_PAGE)
     try:
         questions = paginator.page(page)

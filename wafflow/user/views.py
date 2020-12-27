@@ -6,11 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
-from user.serializers import UserSerializer, UserProfileSerializer, AuthorSerializer
-
-from user.models import UserProfile
-from question.models import UserQuestion, Question
-from answer.models import UserAnswer, Answer
+from user.serializers import UserSerializer, UserProfileSerializer
 
 
 class UserViewSet(viewsets.GenericViewSet):
@@ -44,7 +40,7 @@ class UserViewSet(viewsets.GenericViewSet):
         password = request.data.get("password")
 
         user = authenticate(request, username=username, password=password)
-        if user and user.is_active == True:
+        if user and user.is_active:
             login(request, user)
 
             data = self.get_serializer(user.profile).data
@@ -68,17 +64,9 @@ class UserViewSet(viewsets.GenericViewSet):
                     {"message": "Invalid Token"}, status=status.HTTP_401_UNAUTHORIZED
                 )
             user = request.user
-            data = self.get_serializer(user.profile).data
-            data["answer_count"] = Answer.objects.filter(
-                user=user, is_active=True
-            ).count()
-            data["bookmark_count"] = user.user_questions.filter(
-                bookmark=True, question__is_active=True
-            ).count()
-            return Response(data)
         else:
-            user = self.get_object()
-            return Response(self.get_serializer(user.profile).data)
+            user = User.objects.get(pk=pk, is_active=True)
+        return Response(self.get_serializer(user.profile).data)
 
     def update(self, request, pk=None):
         if pk != "me":
@@ -109,6 +97,6 @@ class UserViewSet(viewsets.GenericViewSet):
             user.is_active = False
             user.save()
             logout(request)
-            return Response(status=status.HTTP_200_OK)
+            return Response({}, status=status.HTTP_200_OK)
         else:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({}, status=status.HTTP_204_NO_CONTENT)

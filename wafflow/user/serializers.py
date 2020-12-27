@@ -4,6 +4,8 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from user.models import UserProfile
+from answer.models import Answer
+from question.models import Question, UserQuestion
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -13,6 +15,8 @@ class UserSerializer(serializers.ModelSerializer):
     last_login = serializers.DateTimeField(read_only=True)
     nickname = serializers.CharField(allow_blank=True, write_only=True)
     picture = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    title = serializers.CharField(allow_blank=True, write_only=True, required=False)
+    intro = serializers.CharField(allow_blank=True, write_only=True, required=False)
 
     class Meta:
         model = User
@@ -24,6 +28,8 @@ class UserSerializer(serializers.ModelSerializer):
             "last_login",
             "nickname",
             "picture",
+            "title",
+            "intro",
         )
 
     def validate_password(self, value):
@@ -36,6 +42,8 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.get("password")
         nickname = validated_data.pop("nickname")
         picture = validated_data.pop("picture", "")
+        title = validated_data.pop("title", None)
+        intro = validated_data.pop("intro", None)
 
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("Email already exists")
@@ -46,22 +54,26 @@ class UserSerializer(serializers.ModelSerializer):
 
         user = super(UserSerializer, self).create(validated_data)
         Token.objects.create(user=user)
-        user.is_active = True
-        user.save()
 
         UserProfile.objects.create(user=user, nickname=nickname, picture=picture)
         return user
 
     @transaction.atomic
     def update(self, user, validated_data):
-        userprofile = user.profile
+        user_profile = user.profile
         nickname = validated_data.pop("nickname", None)
         picture = validated_data.pop("picture", None)
+        title = validated_data.pop("title", None)
+        intro = validated_data.pop("intro", None)
         if nickname and nickname != "":
-            userprofile.nickname = nickname
+            user_profile.nickname = nickname
         if picture and picture != "":
-            userprofile.picture = picture
-        userprofile.save()
+            user_profile.picture = picture
+        if title is not None:
+            user_profile.title = title
+        if intro is not None:
+            user_profile.intro = intro
+        user_profile.save()
 
         return super(UserSerializer, self).update(user, validated_data)
 
@@ -75,6 +87,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField()
     picture = serializers.CharField()
     reputation = serializers.IntegerField()
+    answer_count = serializers.SerializerMethodField()
+    bookmark_count = serializers.SerializerMethodField()
+    question_count = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
@@ -88,19 +103,35 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "nickname",
             "picture",
             "reputation",
+            "answer_count",
+            "bookmark_count",
+            "question_count",
+            "title",
+            "intro",
         )
+
+    def get_answer_count(self, user_profile):
+        return Answer.objects.filter(user=user_profile.user, is_active=True).count()
+
+    def get_question_count(self, user_profile):
+        return Question.objects.filter(user=user_profile.user, is_active=True).count()
+
+    def get_bookmark_count(self, user_profile):
+        return UserQuestion.objects.filter(
+            user=user_profile.user, bookmark=True, question__is_active=True
+        ).count()
 
 
 class AuthorSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
     picture = serializers.CharField(source="profile.picture")
     reputation = serializers.IntegerField(source="profile.reputation")
+    nickname = serializers.CharField(source="profile.nickname")
 
     class Meta:
         model = User
         fields = (
             "id",
-            "username",
+            "nickname",
             "picture",
             "reputation",
         )
