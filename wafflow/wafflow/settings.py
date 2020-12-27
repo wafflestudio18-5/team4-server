@@ -107,7 +107,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "wafflow.wsgi.application"
 
-if os.path.exists(secret_file):
+if ENV_MODE == "test":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "wafflow",
+        }
+    }
+elif os.path.exists(secret_file):
     print(f"#### MODE : {ENV_MODE} ####")
     if ENV_MODE == "prod":
         DATABASES = {
