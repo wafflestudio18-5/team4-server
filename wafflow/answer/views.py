@@ -51,7 +51,13 @@ class AnswerUserViewSet(viewsets.GenericViewSet):
         elif sorted_by == NEWEST:
             answers_all = answers_all.order_by("-created_at")
 
-        page = int(request.query_params.get("page"))
+        page = request.query_params.get("page")
+
+        if page is None:
+            return Response(
+                {"message": "page must be provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         paginator = Paginator(answers_all, ANSWER_PER_PAGE)
 
         try:
@@ -109,6 +115,13 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
             answers_all = answers_all.order_by("-is_accepted", "created_at")
 
         page = request.query_params.get("page")
+
+        if page is None:
+            return Response(
+                {"message": "page must be provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         paginator = Paginator(answers_all, ANSWER_PER_PAGE)
 
         try:
