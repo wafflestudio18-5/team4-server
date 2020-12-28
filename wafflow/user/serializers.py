@@ -12,11 +12,12 @@ from user.constants import *
 
 class UserSerializer(serializers.ModelSerializer):
     nickname = serializers.CharField(write_only=True)
-    picture = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    picture = serializers.ImageField(
+        required=False, allow_empty_file=True, write_only=True
+    )
     title = serializers.CharField(allow_blank=True, write_only=True, required=False)
     intro = serializers.CharField(allow_blank=True, write_only=True, required=False)
     email = serializers.EmailField(
-        required=True,
         validators=[UniqueValidator(queryset=User.objects.all())],
         allow_blank=False,
     )
@@ -122,6 +123,7 @@ class UserProfileProduceSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True, source="user.id")
     username = serializers.CharField(read_only=True, source="user.username")
     email = serializers.EmailField(read_only=True, source="user.email")
     last_login = serializers.DateTimeField(read_only=True, source="user.last_login")
@@ -161,7 +163,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class AuthorSerializer(serializers.ModelSerializer):
-    picture = serializers.CharField(source="profile.picture")
+    picture = serializers.ImageField(source="profile.picture")
     reputation = serializers.IntegerField(source="profile.reputation")
     nickname = serializers.CharField(source="profile.nickname")
 

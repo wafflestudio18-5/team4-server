@@ -9,7 +9,7 @@ class UserProfile(models.Model):
     title = models.CharField(max_length=50, blank=True)
     view_count = models.IntegerField(default=0)
     reputation = models.IntegerField(default=0)
-    picture = models.CharField(max_length=200, blank=True)
+    picture = models.ImageField(upload_to="profile_image", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     github_id = models.IntegerField(null=True)
