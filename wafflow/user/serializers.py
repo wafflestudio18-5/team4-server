@@ -14,7 +14,9 @@ class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField()
     last_login = serializers.DateTimeField(read_only=True)
     nickname = serializers.CharField(allow_blank=True, write_only=True)
-    picture = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    picture = serializers.ImageField(
+        required=False, allow_empty_file=True, write_only=True
+    )
     title = serializers.CharField(allow_blank=True, write_only=True, required=False)
     intro = serializers.CharField(allow_blank=True, write_only=True, required=False)
 
@@ -85,7 +87,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True, source="user.email")
     last_login = serializers.DateTimeField(read_only=True, source="user.last_login")
     nickname = serializers.CharField()
-    picture = serializers.CharField()
+    picture = serializers.ImageField()
     reputation = serializers.IntegerField()
     answer_count = serializers.SerializerMethodField()
     bookmark_count = serializers.SerializerMethodField()
@@ -123,7 +125,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class AuthorSerializer(serializers.ModelSerializer):
-    picture = serializers.CharField(source="profile.picture")
+    picture = serializers.ImageField(source="profile.picture")
     reputation = serializers.IntegerField(source="profile.reputation")
     nickname = serializers.CharField(source="profile.nickname")
 
