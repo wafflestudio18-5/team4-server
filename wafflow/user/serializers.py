@@ -6,17 +6,25 @@ from rest_framework.authtoken.models import Token
 from user.models import UserProfile
 from answer.models import Answer
 from question.models import Question, UserQuestion
+from rest_framework.validators import UniqueValidator
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
-    email = serializers.EmailField()
-    last_login = serializers.DateTimeField(read_only=True)
-    nickname = serializers.CharField(allow_blank=True, write_only=True)
+    nickname = serializers.CharField(write_only=True)
     picture = serializers.CharField(required=False, allow_blank=True, write_only=True)
     title = serializers.CharField(allow_blank=True, write_only=True, required=False)
     intro = serializers.CharField(allow_blank=True, write_only=True, required=False)
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())],
+        allow_blank=False,
+    )
+    pop_list = [
+        "nickname",
+        "picture",
+        "title",
+        "intro",
+    ]
 
     class Meta:
         model = User
@@ -32,50 +40,65 @@ class UserSerializer(serializers.ModelSerializer):
             "intro",
         )
 
+    def validate_username(self, value):
+        if self.instance is not None:
+            raise serializers.ValidationError("changing username is not allowed")
+        return value
+
+    def validate_email(self, value):
+        if self.instance is not None:
+            raise serializers.ValidationError("changing email is not allowed")
+        return value
+
     def validate_password(self, value):
         return make_password(value)
 
     @transaction.atomic
     def create(self, validated_data):
-        email = validated_data.get("email")
-        username = validated_data.get("username")
-        password = validated_data.get("password")
-        nickname = validated_data.pop("nickname")
-        picture = validated_data.pop("picture", "")
-        title = validated_data.pop("title", None)
-        intro = validated_data.pop("intro", None)
-
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError("Email already exists")
-        if User.objects.filter(username=username).exists():
-            raise serializers.ValidationError("Username already exists")
-        if UserProfile.objects.filter(nickname=nickname).exists():
-            raise serializers.ValidationError("Nickname already exists")
+        data = validated_data.copy()
+        for pop in self.pop_list:
+            validated_data.pop(pop, None)
 
         user = super(UserSerializer, self).create(validated_data)
+
+        data["user_id"] = user.id
         Token.objects.create(user=user)
 
-        UserProfile.objects.create(user=user, nickname=nickname, picture=picture)
+        user_profile_serializer = UserProfileProduceSerializer(data=data)
+        user_profile_serializer.is_valid(raise_exception=True)
+        user_profile_serializer.save()
         return user
 
     @transaction.atomic
     def update(self, user, validated_data):
+        data = validated_data.copy()
+        pop_list = self.pop_list.copy() + ["username", "email"]
+
+        for pop in pop_list:
+            validated_data.pop(pop, None)
+
         user_profile = user.profile
-        nickname = validated_data.pop("nickname", None)
-        picture = validated_data.pop("picture", None)
-        title = validated_data.pop("title", None)
-        intro = validated_data.pop("intro", None)
-        if nickname and nickname != "":
-            user_profile.nickname = nickname
-        if picture and picture != "":
-            user_profile.picture = picture
-        if title is not None:
-            user_profile.title = title
-        if intro is not None:
-            user_profile.intro = intro
-        user_profile.save()
+        user_profile_serializer = UserProfileProduceSerializer(
+            user_profile, data=data, partial=True
+        )
+        user_profile_serializer.is_valid(raise_exception=True)
+        user_profile_serializer.save()
 
         return super(UserSerializer, self).update(user, validated_data)
+
+
+class UserProfileProduceSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ("nickname", "picture", "title", "intro", "user_id")
+
+    def create(self, validated_data):
+        user_id = int(validated_data.pop("user_id"))
+        user = User.objects.get(id=user_id)
+        validated_data["user"] = user
+        return super(UserProfileProduceSerializer, self).create(validated_data)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
