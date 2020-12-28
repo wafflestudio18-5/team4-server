@@ -133,9 +133,12 @@ class QuestionViewSet(viewsets.GenericViewSet):
                 is_active=True, id__in=questions_id
             ).all()
 
-        # FIXME : filter_by 구현할 것.
-
-        sorted_questions = sort_questions(request, questions)
+        filtered_questions = filter_questions(request, questions)
+        if filtered_questions is None:
+            return Response(
+                {"error": "Invalid filter_by."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        sorted_questions = sort_questions(request, filtered_questions)
         if sorted_questions is None:
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
@@ -174,9 +177,12 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
                 )
             )
 
-        # FIXME : filter_by 구현할 것.
-
-        sorted_questions = sort_questions(request, questions)
+        filtered_questions = filter_questions(request, questions)
+        if filtered_questions is None:
+            return Response(
+                {"error": "Invalid filter_by."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        sorted_questions = sort_questions(request, filtered_questions)
         if sorted_questions is None:
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
@@ -268,3 +274,18 @@ def paginate_questions(request, questions):
     except EmptyPage:
         return None
     return questions
+
+
+def filter_questions(request, questions):
+    filter_by = request.query_params.get("filter_by")
+
+    if filter_by is None:
+        return questions
+
+    if filter_by not in (NO_ANSWER, NO_ACCEPTED_ANSWER):
+        return None
+
+    if filter_by == NO_ANSWER:
+        return questions.filter(answers__isnull=True)
+    if filter_by == NO_ACCEPTED_ANSWER:
+        return questions.filter(has_accepted=False)

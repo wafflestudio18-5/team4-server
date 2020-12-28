@@ -129,3 +129,7 @@ dmypy.json
 .pyre/
 
 .idea/
+
+# Secret_info
+secret_info.json
+
