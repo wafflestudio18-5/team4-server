@@ -41,4 +41,4 @@ jobs:
       - name: Run Tests
         working-directory: ./wafflow
         run: |
-          DEBUG=TRUE python manage.py test
+          MODE=test python manage.py test
