@@ -7,6 +7,7 @@ from user.models import UserProfile
 from answer.models import Answer
 from question.models import Question, UserQuestion
 from rest_framework.validators import UniqueValidator
+from user.constants import *
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
         validators=[UniqueValidator(queryset=User.objects.all())],
         allow_blank=False,
     )
+
     pop_list = [
         "nickname",
         "picture",
@@ -43,6 +45,8 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_username(self, value):
         if self.instance is not None:
             raise serializers.ValidationError("changing username is not allowed")
+        if len(value) > MAX_LENGTH:
+            raise serializers.ValidationError("username is too long")
         return value
 
     def validate_email(self, value):
@@ -92,7 +96,23 @@ class UserProfileProduceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ("nickname", "picture", "title", "intro", "user_id")
+        fields = ("nickname", "picture", "title", "intro", "user_id", "github_id")
+
+    def validate_github_id(self, value):
+        if self.instance:
+            raise serializers.ValidationError("github_id is not allowed to edit")
+        if value is not None and UserProfile.objects.filter(github_id=value).exists():
+            raise serializers.ValidationError(
+                "user_profile with this github user is already exist"
+            )
+        return value
+
+    def validate_user_id(self, value):
+        if self.instance:
+            raise serializers.ValidationError("user_id is not allowed to edit")
+        if not User.objects.filter(id=value, is_active=True).exists():
+            raise serializers.ValidationError("active user is not exist")
+        return value
 
     def create(self, validated_data):
         user_id = int(validated_data.pop("user_id"))
@@ -103,13 +123,8 @@ class UserProfileProduceSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(read_only=True, source="user.username")
-    created_at = serializers.DateTimeField(read_only=True)
-    updated_at = serializers.DateTimeField(read_only=True)
     email = serializers.EmailField(read_only=True, source="user.email")
     last_login = serializers.DateTimeField(read_only=True, source="user.last_login")
-    nickname = serializers.CharField()
-    picture = serializers.CharField()
-    reputation = serializers.IntegerField()
     answer_count = serializers.SerializerMethodField()
     bookmark_count = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
