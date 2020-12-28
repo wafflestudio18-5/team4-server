@@ -25,7 +25,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "There is no question with the id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if question.user == user:
+        if question.user != user:
             return Response(
                 {"message": "Not allowed to rate this question"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -71,7 +71,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "There is no answer with the id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if answer.user == user:
+        if answer.user != user:
             return Response(
                 {"message": "Not allowed to rate this answer"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -117,7 +117,7 @@ class RateViewSet(viewsets.GenericViewSet):
                 {"message": "There is no comment with the id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if comment.user == user:
+        if comment.user != user:
             return Response(
                 {"message": "Not allowed to rate this comment"},
                 status=status.HTTP_403_FORBIDDEN,
