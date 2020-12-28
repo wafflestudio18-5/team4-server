@@ -130,7 +130,13 @@ class UserViewSet(viewsets.GenericViewSet):
                 )
             user = request.user
         else:
-            user = User.objects.get(pk=pk, is_active=True)
+            try:
+                user = User.objects.get(pk=pk, is_active=True)
+            except User.DoesNotExist:
+                return Response(
+                    {"message": "There is no user with that id"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
         return Response(self.get_serializer(user.profile).data)
 
     def update(self, request, pk=None):

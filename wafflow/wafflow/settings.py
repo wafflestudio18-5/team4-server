@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 from pathlib import Path
+import json
 import os
+
+ENV_MODE = os.getenv("MODE", "dev")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,13 +23,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+if ENV_MODE != "test":
+    secret_file = os.path.join(os.path.dirname(__file__), "secret_info.json")
+    if os.path.exists(secret_file):
+        with open(secret_file) as f:
+            secret_info = json.loads(f.read())
+    else:
+        raise Exception("Check your 'secret_info.json' file!")
 SECRET_KEY = "b%_g4tci#1^@1izfge*%!r!^^5=eej!vzj1hca=zvn!d6+ksi3"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if ENV_MODE != "prod":
+    DEBUG = True
+DEBUG_TOOLBAR = os.getenv("DEBUG_TOOLBAR") in ("true", "True")
 # DEBUG = os.getenv('DEBUG') in ('true', 'True', 'TRUE')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    ".amazonaws.com",
+    "localhost",
+    "127.0.0.1",
+    "13.209.15.197",  # Public IPv4 Address for AWS EC2 Instance
+]
 
 # Application definition
 
@@ -94,16 +111,45 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "wafflow.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "wafflow",
-        "USER": "wafflow",
-        "PASSWORD": "wafflow-backend",
-        "HOST": "127.0.0.1",
-        "PORT": "5432",
+if ENV_MODE == "test":
+    print(f"#### MODE : {ENV_MODE} ####")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "HOST": "127.0.0.1",
+            "PORT": "5432",
+            "NAME": "wafflow",
+            "USER": "wafflow",
+            "PASSWORD": "wafflow-backend",
+        }
     }
-}
+elif os.path.exists(secret_file):
+    print(f"#### MODE : {ENV_MODE} ####")
+    if ENV_MODE == "prod":
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "HOST": secret_info["DATABASE_HOST"],
+                "PORT": secret_info["DATABASE_PORT"],
+                "NAME": secret_info["DATABASE_NAME"],
+                "USER": secret_info["DATABASE_USER"],
+                "PASSWORD": secret_info["DATABASE_PASSWORD"],
+            }
+        }
+    else:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "HOST": "127.0.0.1",
+                "PORT": secret_info["DATABASE_PORT"],
+                "NAME": secret_info["DATABASE_NAME"],
+                "USER": secret_info["DATABASE_USER"],
+                "PASSWORD": secret_info["DATABASE_PASSWORD"],
+            }
+        }
+else:
+    raise Exception("Check your 'secret_info.json' file!")
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
