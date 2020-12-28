@@ -23,13 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-secret_file = os.path.join(os.path.dirname(__file__), "secret_info.json")
-if os.path.exists(secret_file):
-    with open(secret_file) as f:
-        secret_info = json.loads(f.read())
-else:
-    raise Exception("Check your 'secret_info.json' file!")
-SECRET_KEY = secret_info["SECRET_KEY"]
+if ENV_MODE != "test":
+    secret_file = os.path.join(os.path.dirname(__file__), "secret_info.json")
+    if os.path.exists(secret_file):
+        with open(secret_file) as f:
+            secret_info = json.loads(f.read())
+    else:
+        raise Exception("Check your 'secret_info.json' file!")
+SECRET_KEY = "b%_g4tci#1^@1izfge*%!r!^^5=eej!vzj1hca=zvn!d6+ksi3"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 if ENV_MODE != "prod":
@@ -108,10 +109,15 @@ TEMPLATES = [
 WSGI_APPLICATION = "wafflow.wsgi.application"
 
 if ENV_MODE == "test":
+    print(f"#### MODE : {ENV_MODE} ####")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
+            "HOST": "127.0.0.1",
+            "PORT": "5432",
             "NAME": "wafflow",
+            "USER": "wafflow",
+            "PASSWORD": "wafflow-backend",
         }
     }
 elif os.path.exists(secret_file):
