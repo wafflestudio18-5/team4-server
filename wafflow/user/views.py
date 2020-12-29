@@ -45,7 +45,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        GITHUB = "github_social_login"
         user = User.objects.create_user(
             username=f"{GITHUB}_{github_id}",
             password="github",
