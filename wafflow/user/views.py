@@ -3,10 +3,18 @@ from django.db import IntegrityError
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
+from django.db import transaction
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
-from user.serializers import UserSerializer, UserProfileSerializer
+from user.serializers import (
+    UserSerializer,
+    UserProfileSerializer,
+    UserProfileProduceSerializer,
+)
+from user.token import get_github_data
+from user.models import UserProfile
+from user.constants import *
 
 
 class UserViewSet(viewsets.GenericViewSet):
@@ -23,8 +31,48 @@ class UserViewSet(viewsets.GenericViewSet):
             return UserSerializer
         return UserProfileSerializer
 
+    @transaction.atomic
+    def create_github_user(self, request):
+        github_data = get_github_data(request.data.get("github_token"))
+        if github_data is None or github_data.get("id") is None:
+            return Response(
+                {"message": "Invalid github token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        github_id = int(github_data["id"])
+        if UserProfile.objects.filter(github_id=github_id).exists():
+            return Response(
+                {"message": "User already signed up"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.create_user(
+            username=f"{GITHUB}_{github_id}",
+            password="github",
+            email=github_data.get("email", ""),
+        )
+        request_data = request.data.copy()
+        request_data["github_id"] = github_id
+        request_data["user_id"] = user.id
+        serializer = UserProfileProduceSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        login(request, user)
+
+        data = UserProfileSerializer(user.profile).data
+        data["token"] = user.auth_token.key
+        return Response(data, status=status.HTTP_201_CREATED)
+
     def create(self, request):
-        serializer = self.get_serializer(data=request.data)
+        request_data = request.data.copy()
+
+        github_token = request_data.get("github_token")
+
+        if github_token is not None:
+            return self.create_github_user(request)
+
+        request_data.pop("github_id", None)
+        serializer = self.get_serializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
@@ -38,8 +86,24 @@ class UserViewSet(viewsets.GenericViewSet):
     def login(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
+        github_token = request.data.get("github_token")
 
-        user = authenticate(request, username=username, password=password)
+        if github_token is None:
+            if len(username) > MAX_LENGTH:
+                return Response(
+                    {"message": "Authentication failed"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            user = authenticate(request, username=username, password=password)
+        else:
+            github_data = get_github_data(github_token)
+            try:
+                user = UserProfile.objects.get(github_id=github_data.get("id")).user
+            except UserProfile.DoesNotExist:
+                return Response(
+                    {"message": "Authentication failed"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
         if user and user.is_active:
             login(request, user)
 
@@ -65,7 +129,13 @@ class UserViewSet(viewsets.GenericViewSet):
                 )
             user = request.user
         else:
-            user = User.objects.get(pk=pk, is_active=True)
+            try:
+                user = User.objects.get(pk=pk, is_active=True)
+            except User.DoesNotExist:
+                return Response(
+                    {"message": "There is no user with that id"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
         return Response(self.get_serializer(user.profile).data)
 
     def update(self, request, pk=None):
