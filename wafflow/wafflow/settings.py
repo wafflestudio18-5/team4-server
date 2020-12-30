@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "question.apps.QuestionConfig",
     "rate.apps.RateConfig",
     "user.apps.UserConfig",
+    "tag.apps.TagConfig",
 ]
 
 MIDDLEWARE = [

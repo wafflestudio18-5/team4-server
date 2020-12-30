@@ -5,9 +5,11 @@ from rest_framework.decorators import action
 from django.http import HttpResponsePermanentRedirect
 from django.shortcuts import redirect
 from django.core.paginator import Paginator, EmptyPage
+from django.db import transaction
 
 from django.contrib.auth.models import User
-from question.models import Question
+from tag.models import UserTag
+from question.models import Question, QuestionTag
 from answer.models import Answer
 from answer.constants import *
 from answer.serializers import (
@@ -135,6 +137,7 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
             )
         return Response({"answers": self.get_serializer(answers, many=True).data})
 
+    @transaction.atomic
     def make(self, request, pk=None):
         try:
             question = Question.objects.get(pk=pk, is_active=True)
@@ -149,6 +152,11 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         answer = serializer.save()
+        question_tags = QuestionTag.objects.filter(question=question)
+        for question_tag in question_tags:
+            user_tag, created = UserTag.objects.get_or_create(
+                user=request.user, tag=question_tag.tag
+            )
 
         return Response(
             AnswerInfoSerializer(answer, context=self.get_serializer_context()).data,
@@ -182,6 +190,7 @@ class AnswerViewSet(viewsets.GenericViewSet):
 
         return Response(self.get_serializer(answer).data)
 
+    @transaction.atomic
     def update(self, request, pk=None):
         try:
             answer = Answer.objects.get(pk=pk, is_active=True)
@@ -207,6 +216,7 @@ class AnswerViewSet(viewsets.GenericViewSet):
             AnswerInfoSerializer(answer, context=self.get_serializer_context()).data,
         )
 
+    @transaction.atomic
     def destroy(self, request, pk=None):
         try:
             answer = Answer.objects.get(pk=pk)
@@ -223,6 +233,12 @@ class AnswerViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        question = answer.question
+        question_tags = QuestionTag.objects.filter(question=question)
+        for question_tag in question_tags:
+            user_tag = UserTag.objects.get(user=request.user, tag=question_tag.tag)
+            user_tag.score -= answer.vote
+            user_tag.save()
         answer.is_active = False
         answer.save()
 

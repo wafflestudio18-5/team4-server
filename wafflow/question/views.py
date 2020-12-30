@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from question.constants import *
+from tag.models import UserTag
 from question.models import Question, Tag, QuestionTag
 from question.serializers import (
     QuestionSerializer,
@@ -58,6 +59,9 @@ class QuestionViewSet(viewsets.GenericViewSet):
                 for tag in tags:
                     tag, created = Tag.objects.get_or_create(name=tag)
                     QuestionTag.objects.create(question=question, tag=tag)
+                    user_tag, created = UserTag.objects.get_or_create(
+                        tag=tag, user=user
+                    )
 
         return Response(
             QuestionInfoSerializer(
@@ -136,7 +140,10 @@ class QuestionViewSet(viewsets.GenericViewSet):
                 try:
                     user = User.objects.get(pk=int(user_id), is_active=True)
                 except (User.DoesNotExist, ValueError):
-                    return Response({{"error": "There is no user with the given id"}})
+                    return Response(
+                        {"error": "There is no user with the given id"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
                 questions = Question.objects.filter(
                     is_active=True, id__in=questions_id
                 ).filter(Q(user=user) | Q(answers__user=user, answers__is_active=True))

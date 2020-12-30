@@ -139,6 +139,7 @@ class UserViewSet(viewsets.GenericViewSet):
                     {"message": "There is no user with that id"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
+
         return Response(self.get_serializer(user.profile).data)
 
     def update(self, request, pk=None):
@@ -185,7 +186,9 @@ class UserListViewSet(viewsets.GenericViewSet):
         if search is None or search == "":
             users = self.get_queryset()
         else:
-            users = User.objects.filter(profile__name__contains=search, is_active=True)
+            users = User.objects.filter(
+                profile__nickname__contains=search, is_active=True
+            )
 
         users = sort_users(request, users)
 
