@@ -12,3 +12,4 @@ class UserProfile(models.Model):
     picture = models.ImageField(upload_to="profile_image", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    github_id = models.IntegerField(null=True)
