@@ -361,7 +361,7 @@ class PutUserMeTestCase(UserTestSetting):
     def test_put_user_me_same_nickname(self):
         response = self.client.put(
             "/user/me/",
-            json.dumps({"password": "12345", "nickname": "guzus"}),
+            json.dumps({"password": "12345", "nickname": "audrn31"}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -378,7 +378,7 @@ class PutUserMeTestCase(UserTestSetting):
                     "title": "hi",
                     "intro": "I'm waffle",
                     "password": "12345",
-                    "nickname": "new_guzus",
+                    "nickname": "new_audrn31",
                 }
             ),
             HTTP_AUTHORIZATION=self.guzus_token,
@@ -389,12 +389,12 @@ class PutUserMeTestCase(UserTestSetting):
 
         data = response.json()
         self.assertIn("id", data)
-        self.assertEqual(data["username"], "new_guzus")
+        self.assertEqual(data["username"], "guzus")
         self.assertIn("created_at", data)
         self.assertIn("updated_at", data)
         self.assertEqual(data["email"], "guzus@naver.com")
         self.assertIn("last_login", data)
-        self.assertEqual(data["nickname"], "audrn31")
+        self.assertEqual(data["nickname"], "new_audrn31")
         self.assertIn("picture", data)
         self.assertEqual(data["reputation"], 0)
         self.assertEqual(data["title"], "hi")
@@ -407,6 +407,7 @@ class PutUserMeTestCase(UserTestSetting):
 class DeleteUserMeTestCase(UserTestSetting):
     def setUp(self):
         self.set_up_user_guzus()
+        self.set_up_user_retired_guzus()
 
     def test_delete_user_me_invalid_pk(self):
         response = self.client.delete(
@@ -423,6 +424,13 @@ class DeleteUserMeTestCase(UserTestSetting):
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+        response = self.client.delete(
+            "/user/me/",
+            HTTP_AUTHORIZATION=self.retired_guzus_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_delete_user_me(self):
         response = self.client.delete(
             "/user/me/",
@@ -430,14 +438,6 @@ class DeleteUserMeTestCase(UserTestSetting):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_delete_user_me_already_deleted(self):
-        response = self.client.delete(
-            "/user/me/",
-            HTTP_AUTHORIZATION=self.guzus_token,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class PutUserLoginTestCase:
