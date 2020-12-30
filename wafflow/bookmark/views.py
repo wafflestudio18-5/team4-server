@@ -1,8 +1,9 @@
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 from django.core.paginator import Paginator, EmptyPage
+from django.contrib.auth.models import User
 
 from question.models import UserQuestion, Question
 from bookmark.serializers import SimpleBookmarkSerializer, BookmarkQuestionSerializer
@@ -69,7 +70,7 @@ class BookmarkQuestionViewSet(viewsets.GenericViewSet):
 
 class BookmarkUserViewSet(viewsets.GenericViewSet):
     queryset = UserQuestion.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
 
     def sorted_by_queryset(self, user_questions, sorted_by):
         queryset = {
@@ -83,10 +84,19 @@ class BookmarkUserViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         if pk != "me":
-            return Response(
-                {"message": "it is not allowed to bookmark other than me"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            try:
+                user = User.objects.get(pk=pk, is_active=True)
+            except User.DoesNotExist:
+                return Response(
+                    {"message": "There is no user with this id"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            if not request.user.is_authenticated or not request.user.is_active:
+                return Response(
+                    {"message": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED
+                )
+            user = request.user
 
         sorted_by = request.query_params.get("sorted_by")
         page = request.query_params.get("page")
@@ -99,7 +109,7 @@ class BookmarkUserViewSet(viewsets.GenericViewSet):
 
         page = int(page)
         user_questions_all = UserQuestion.objects.filter(
-            user=request.user, bookmark=True, question__is_active=True
+            user=user, bookmark=True, question__is_active=True
         )
 
         user_questions_all = self.sorted_by_queryset(user_questions_all, sorted_by)

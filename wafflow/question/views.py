@@ -143,7 +143,9 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
             )
-        paginated_questions = paginate_questions(request, sorted_questions)
+        paginated_questions = paginate_objects(
+            request, sorted_questions, QUESTION_PER_PAGE
+        )
         if paginated_questions is None:
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
@@ -187,7 +189,9 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
             )
-        paginated_questions = paginate_questions(request, sorted_questions)
+        paginated_questions = paginate_objects(
+            request, sorted_questions, QUESTION_PER_PAGE
+        )
         if paginated_questions is None:
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
@@ -221,7 +225,9 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
             )
-        paginated_questions = paginate_questions(request, sorted_user_questions)
+        paginated_questions = paginate_objects(
+            request, sorted_user_questions, QUESTION_PER_PAGE
+        )
         if paginated_questions is None:
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
@@ -263,17 +269,17 @@ def sort_user_questions(request, questions):
     return questions
 
 
-def paginate_questions(request, questions):
+def paginate_objects(request, objects, object_per_page):
     page = request.query_params.get("page")
 
     if page is None:
         return None
-    paginator = Paginator(questions, QUESTION_PER_PAGE)
+    paginator = Paginator(objects, object_per_page)
     try:
-        questions = paginator.page(page)
+        objects = paginator.page(page)
     except EmptyPage:
         return None
-    return questions
+    return objects
 
 
 def filter_questions(request, questions):

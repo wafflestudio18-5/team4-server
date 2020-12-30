@@ -21,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
         validators=[UniqueValidator(queryset=User.objects.all())],
         allow_blank=False,
     )
+    last_login = serializers.DateTimeField(read_only=True)
 
     pop_list = [
         "nickname",
@@ -124,18 +125,23 @@ class UserProfileProduceSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True, source="user.id")
-    username = serializers.CharField(read_only=True, source="user.username")
+    username = serializers.CharField(source="user.username")
     email = serializers.EmailField(read_only=True, source="user.email")
     last_login = serializers.DateTimeField(read_only=True, source="user.last_login")
     answer_count = serializers.SerializerMethodField()
     bookmark_count = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
 
+    # only for drf
+    password = serializers.CharField(write_only="True")
+    github_token = serializers.CharField(write_only="True")
+
     class Meta:
         model = UserProfile
         fields = (
             "id",
             "username",
+            "password",
             "created_at",
             "updated_at",
             "email",
@@ -148,6 +154,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "question_count",
             "title",
             "intro",
+            "github_token",
         )
 
     def get_answer_count(self, user_profile):
@@ -160,6 +167,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return UserQuestion.objects.filter(
             user=user_profile.user, bookmark=True, question__is_active=True
         ).count()
+
+    def validate(self, attrs):
+        raise serializers.ValidationError(
+            "not allowed to edit or create using this serializer"
+        )
 
 
 class AuthorSerializer(serializers.ModelSerializer):
