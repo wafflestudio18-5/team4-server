@@ -112,8 +112,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["GET"])
     def tagged(self, request):
         tags = request.query_params.get("tags")
-        filter_by = request.query_params.get("filter_by")
-
+        user_id = request.query_params.get("user")
         tags = tags.split(" ") if tags else None
         if not tags:
             questions = Question.objects.filter(is_active=True)
@@ -129,9 +128,18 @@ class QuestionViewSet(viewsets.GenericViewSet):
                     ]
                 )
             )
-            questions = Question.objects.filter(
-                is_active=True, id__in=questions_id
-            ).all()
+            if user_id is None:
+                questions = Question.objects.filter(
+                    is_active=True, id__in=questions_id
+                ).all()
+            else:
+                try:
+                    user = User.objects.get(pk=int(user_id), is_active=True)
+                except (User.DoesNotExist, ValueError):
+                    return Response({{"error": "There is no user with the given id"}})
+                questions = Question.objects.filter(
+                    is_active=True, id__in=questions_id
+                ).filter(Q(user=user) | Q(answers__user=user, answers__is_active=True))
 
         filtered_questions = filter_questions(request, questions)
         if filtered_questions is None:
