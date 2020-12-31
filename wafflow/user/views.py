@@ -131,7 +131,7 @@ class UserViewSet(viewsets.GenericViewSet):
         else:
             try:
                 user = User.objects.get(pk=pk, is_active=True)
-            except User.DoesNotExist:
+            except (User.DoesNotExist, ValueError) as e:
                 return Response(
                     {"message": "There is no user with that id"},
                     status=status.HTTP_404_NOT_FOUND,
