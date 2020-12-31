@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny
 
-from django.db.models import Count, Q, Sum, When, Value, Case, F
+from django.db.models import Count, Q
 from question.models import Tag
 from question.views import paginate_objects
 from tag.serializers import TagListSerializer, TagUserSerializer
@@ -26,7 +26,7 @@ class TagViewSet(viewsets.GenericViewSet):
         else:
             try:
                 user = User.objects.get(pk=pk, is_active=True)
-            except User.DoesNotExist:
+            except (User.DoesNotExist, ValueError):
                 return Response(
                     {"message": "There is no user with that id"},
                     status=status.HTTP_404_NOT_FOUND,
@@ -74,7 +74,7 @@ def search_tag_list(request, tags):
     search = request.query_params.get("search")
     if search is None or search == "":
         return tags
-    return Tag.objects.filter(name__contains=search)
+    return Tag.objects.filter(name__icontains=search)
 
 
 def sort_tags_list(request, tags):

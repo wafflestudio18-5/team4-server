@@ -134,7 +134,7 @@ class UserViewSet(viewsets.GenericViewSet):
         else:
             try:
                 user = User.objects.get(pk=pk, is_active=True)
-            except User.DoesNotExist:
+            except (User.DoesNotExist, ValueError):
                 return Response(
                     {"message": "There is no user with that id"},
                     status=status.HTTP_404_NOT_FOUND,
@@ -187,7 +187,7 @@ class UserListViewSet(viewsets.GenericViewSet):
             users = self.get_queryset()
         else:
             users = User.objects.filter(
-                profile__nickname__contains=search, is_active=True
+                profile__nickname__icontains=search, is_active=True
             )
 
         users = sort_users(request, users)
