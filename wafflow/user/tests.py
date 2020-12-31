@@ -12,6 +12,11 @@ import json
 
 
 class UserTestSetting(TestCase):
+    def set_up_users(self):
+        self.set_up_user_guzus()
+        self.set_up_user_retired_guzus()
+        self.set_up_user_eldpswp99()
+
     def set_up_user_guzus(self):
         self.guzus = User.objects.create_user(
             username="guzus", email="guzus@naver.com", password="password"
@@ -204,8 +209,7 @@ class GetUserMeTestCase(UserTestSetting):
     client = Client()
 
     def setUp(self):
-        self.set_up_user_guzus()
-        self.set_up_user_retired_guzus()
+        self.set_up_users()
 
     def test_get_user_me_invalid_pk(self):
         response = self.client.get(
@@ -255,10 +259,9 @@ class GetUserMeTestCase(UserTestSetting):
 
 class GetUserUserIDTestCase(UserTestSetting):
     def setUp(self):
-        self.set_up_user_guzus()
-        self.set_up_user_retired_guzus()
+        self.set_up_users()
 
-    def test_get_user_user_id_deleted_user(self):
+    def test_get_user_user_id_of_deleted_user(self):
         response = self.client.get(
             f"/user/{self.retired_guzus.id}/",
             content_type="application/json",
@@ -286,22 +289,20 @@ class GetUserUserIDTestCase(UserTestSetting):
         data = response.json()
         self.check_guzus(data)
 
-        response = self.client.get(
-            f"/user/{self.guzus.id}/",
-            HTTP_AUTHORIZATION=self.retired_guzus_token,
-            content_type="application/json",
-        )
+        # response = self.client.get(
+        #     f"/user/{self.guzus.id}/",
+        #     HTTP_AUTHORIZATION=self.retired_guzus_token,
+        #     content_type="application/json",
+        # )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.json()
-        self.check_guzus(data)
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # data = response.json()
+        # self.check_guzus(data)
 
 
 class PutUserMeTestCase(UserTestSetting):
     def setUp(self):
-        self.set_up_user_guzus()
-        self.set_up_user_eldpswp99()
-        self.set_up_user_retired_guzus()
+        self.set_up_users()
 
     def test_put_user_me_invalid_pk(self):
         response = self.client.put(
@@ -358,7 +359,7 @@ class PutUserMeTestCase(UserTestSetting):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_put_user_me_same_nickname(self):
+    def test_put_user_me_same_used_nickname(self):
         response = self.client.put(
             "/user/me/",
             json.dumps({"password": "12345", "nickname": "audrn31"}),
@@ -369,6 +370,25 @@ class PutUserMeTestCase(UserTestSetting):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
         self.check_guzus(data)
+
+    def test_put_user_me_try_change_username_or_email(self):
+        response = self.client.put(
+            "/user/me/",
+            json.dumps({"password": "12345", "username": "new_guzus"}),
+            HTTP_AUTHORIZATION=self.guzus_token,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.put(
+            "/user/me/",
+            json.dumps({"password": "12345", "email": "new_guzus@naver.com"}),
+            HTTP_AUTHORIZATION=self.guzus_token,
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_put_user_me(self):
         response = self.client.put(
@@ -406,8 +426,7 @@ class PutUserMeTestCase(UserTestSetting):
 
 class DeleteUserMeTestCase(UserTestSetting):
     def setUp(self):
-        self.set_up_user_guzus()
-        self.set_up_user_retired_guzus()
+        self.set_up_users()
 
     def test_delete_user_me_invalid_pk(self):
         response = self.client.delete(
@@ -442,8 +461,7 @@ class DeleteUserMeTestCase(UserTestSetting):
 
 class PutUserLoginTestCase:
     def setUp(self):
-        self.set_up_user_guzus()
-        self.set_up_user_retired_guzus()
+        self.set_up_users()
 
     def test_put_user_login_invalid_info(self):
         response = self.client.put(
@@ -479,7 +497,7 @@ class PutUserLoginTestCase:
 
 class PostUserLogoutTestCase(UserTestSetting):
     def setUp(self):
-        self.set_up_user_guzus()
+        self.set_up_users()
 
     def test_post_user_logout_invalid_token(self):
         response = self.client.post(
