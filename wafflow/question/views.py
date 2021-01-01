@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from question.constants import *
+from tag.models import UserTag
 from question.models import Question, Tag, QuestionTag
 from question.serializers import (
     QuestionSerializer,
@@ -58,6 +59,9 @@ class QuestionViewSet(viewsets.GenericViewSet):
                 for tag in tags:
                     tag, created = Tag.objects.get_or_create(name=tag)
                     QuestionTag.objects.create(question=question, tag=tag)
+                    user_tag, created = UserTag.objects.get_or_create(
+                        tag=tag, user=user
+                    )
 
         return Response(
             QuestionInfoSerializer(
@@ -69,7 +73,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             question = Question.objects.get(pk=pk, is_active=True)
-        except Question.DoesNotExist:
+        except (Question.DoesNotExist, ValueError):
             return Response(
                 {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -81,7 +85,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
     def update(self, request, pk=None):
         try:
             question = Question.objects.get(pk=pk, is_active=True)
-        except Question.DoesNotExist:
+        except (Question.DoesNotExist, ValueError):
             return Response(
                 {"error": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -112,8 +116,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["GET"])
     def tagged(self, request):
         tags = request.query_params.get("tags")
-        filter_by = request.query_params.get("filter_by")
-
+        user_id = request.query_params.get("user")
         tags = tags.split(" ") if tags else None
         if not tags:
             questions = Question.objects.filter(is_active=True)
@@ -129,9 +132,21 @@ class QuestionViewSet(viewsets.GenericViewSet):
                     ]
                 )
             )
-            questions = Question.objects.filter(
-                is_active=True, id__in=questions_id
-            ).all()
+            if user_id is None:
+                questions = Question.objects.filter(
+                    is_active=True, id__in=questions_id
+                ).all()
+            else:
+                try:
+                    user = User.objects.get(pk=int(user_id), is_active=True)
+                except (User.DoesNotExist, ValueError):
+                    return Response(
+                        {"error": "There is no user with the given id"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                questions = Question.objects.filter(
+                    is_active=True, id__in=questions_id
+                ).filter(Q(user=user) | Q(answers__user=user, answers__is_active=True))
 
         filtered_questions = filter_questions(request, questions)
         if filtered_questions is None:
@@ -143,7 +158,9 @@ class QuestionViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
             )
-        paginated_questions = paginate_questions(request, sorted_questions)
+        paginated_questions = paginate_objects(
+            request, sorted_questions, QUESTION_PER_PAGE
+        )
         if paginated_questions is None:
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
@@ -187,7 +204,9 @@ class QuestionKeywordsViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
             )
-        paginated_questions = paginate_questions(request, sorted_questions)
+        paginated_questions = paginate_objects(
+            request, sorted_questions, QUESTION_PER_PAGE
+        )
         if paginated_questions is None:
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
@@ -209,7 +228,7 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             user = User.objects.get(pk=pk, is_active=True)
-        except User.DoesNotExist:
+        except (User.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no user with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -221,7 +240,9 @@ class QuestionUserViewSet(viewsets.GenericViewSet):
             return Response(
                 {"error": "Invalid sorted_by."}, status=status.HTTP_400_BAD_REQUEST
             )
-        paginated_questions = paginate_questions(request, sorted_user_questions)
+        paginated_questions = paginate_objects(
+            request, sorted_user_questions, QUESTION_PER_PAGE
+        )
         if paginated_questions is None:
             return Response(
                 {"error": "Invalid page"}, status=status.HTTP_400_BAD_REQUEST
@@ -263,17 +284,17 @@ def sort_user_questions(request, questions):
     return questions
 
 
-def paginate_questions(request, questions):
+def paginate_objects(request, objects, object_per_page):
     page = request.query_params.get("page")
 
     if page is None:
         return None
-    paginator = Paginator(questions, QUESTION_PER_PAGE)
+    paginator = Paginator(objects, object_per_page)
     try:
-        questions = paginator.page(page)
+        objects = paginator.page(page)
     except EmptyPage:
         return None
-    return questions
+    return objects
 
 
 def filter_questions(request, questions):

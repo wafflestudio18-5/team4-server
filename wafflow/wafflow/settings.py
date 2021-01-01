@@ -56,12 +56,14 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
+    "corsheaders",
     "answer.apps.AnswerConfig",
     "bookmark.apps.BookmarkConfig",
     "comment.apps.CommentConfig",
     "question.apps.QuestionConfig",
     "rate.apps.RateConfig",
     "user.apps.UserConfig",
+    "tag.apps.TagConfig",
 ]
 
 MIDDLEWARE = [
@@ -72,6 +74,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = ["http://localhost:8000", "http://localhost:3000"]
