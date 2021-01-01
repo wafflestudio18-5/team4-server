@@ -5,7 +5,7 @@ from rest_framework.authtoken.models import Token
 
 from answer.models import Answer, UserAnswer
 from comment.models import Comment
-from question.models import Question
+from question.models import Question, UserQuestion
 from user.models import UserProfile
 
 import json
@@ -16,6 +16,7 @@ class UserTestSetting(TestCase):
         self.set_up_user_guzus()
         self.set_up_user_retired_guzus()
         self.set_up_user_eldpswp99()
+        self.set_up_user_YeonghyeonKo()
 
     def set_up_user_guzus(self):
         self.guzus = User.objects.create_user(
@@ -60,6 +61,44 @@ class UserTestSetting(TestCase):
         Token.objects.create(user=self.eldpswp99)
         self.eldpswp99_token = "Token " + Token.objects.get(user=self.eldpswp99).key
 
+    def set_up_user_YeonghyeonKo(self):
+        self.YeonghyeonKo = User.objects.create_user(
+            username="YeonghyeonKo", email="ko@naver.com", password="0000"
+        )
+        YeonghyeonKo_profile = UserProfile.objects.create(
+            user=self.YeonghyeonKo,
+            nickname="Yeonghyeon Ko",
+            intro="Deploying is fun!",
+        )
+        Token.objects.create(user=self.YeonghyeonKo)
+        self.YeonghyeonKo_token = (
+            "Token " + Token.objects.get(user=self.YeonghyeonKo).key
+        )
+
+    def set_up_user_activites(self):
+        self.guzus_QUESTION_COUNT = 45
+        for i in range(self.guzus_QUESTION_COUNT):
+            Question.objects.create(
+                title=str(i + 1),
+                content=str(i + 1),
+                user=self.guzus,
+                vote=i + 1,
+            )
+        self.eldpswp99_ANSWER_COUNT = 30
+        for i in range(self.eldpswp99_ANSWER_COUNT):
+            Answer.objects.create(
+                content=str(i + 1),
+                question=Question.objects.get(id=i + 1),
+                user=self.eldpswp99,
+                vote=i + 1,
+            )
+        self.YeonghyeonKo_BOOKMARK_COUNT = 15
+        for i in range(self.YeonghyeonKo_BOOKMARK_COUNT):
+            question = Question.objects.get(id=i + 1)
+            UserQuestion.objects.create(
+                user=self.YeonghyeonKo, question=question, bookmark=True, rating=0
+            )
+
     def check_guzus(self, data):
         self.assertIn("id", data)
         self.assertEqual(data["username"], "guzus")
@@ -75,6 +114,54 @@ class UserTestSetting(TestCase):
         self.assertEqual(data["question_count"], 0)
         self.assertEqual(data["answer_count"], 0)
         self.assertEqual(data["bookmark_count"], 0)
+
+    def check_guzus_after_activites(self, data):
+        self.assertIn("id", data)
+        self.assertEqual(data["username"], "guzus")
+        self.assertIn("created_at", data)
+        self.assertIn("updated_at", data)
+        self.assertEqual(data["email"], "guzus@naver.com")
+        self.assertIn("last_login", data)
+        self.assertEqual(data["nickname"], "audrn31")
+        self.assertIn("picture", data)
+        self.assertEqual(data["reputation"], 0)
+        self.assertEqual(data["title"], "grandmaster")
+        self.assertEqual(data["intro"], "Hello World!")
+        self.assertEqual(data["question_count"], self.guzus_QUESTION_COUNT)
+        self.assertEqual(data["answer_count"], 0)
+        self.assertEqual(data["bookmark_count"], 0)
+
+    def check_eldpswp99_after_activites(self, data):
+        self.assertIn("id", data)
+        self.assertEqual(data["username"], "eldpswp99")
+        self.assertIn("created_at", data)
+        self.assertIn("updated_at", data)
+        self.assertEqual(data["email"], "nrg1392@naver.com")
+        self.assertIn("last_login", data)
+        self.assertEqual(data["nickname"], "MyungHoon Park")
+        self.assertIn("picture", data)
+        self.assertEqual(data["reputation"], 0)
+        self.assertIn("title", data)
+        self.assertEqual(data["intro"], "Hello World!")
+        self.assertEqual(data["question_count"], 0)
+        self.assertEqual(data["answer_count"], self.eldpswp99_ANSWER_COUNT)
+        self.assertEqual(data["bookmark_count"], 0)
+
+    def check_YeonghyeonKo_after_activites(self, data):
+        self.assertIn("id", data)
+        self.assertEqual(data["username"], "YeonghyeonKo")
+        self.assertIn("created_at", data)
+        self.assertIn("updated_at", data)
+        self.assertEqual(data["email"], "ko@naver.com")
+        self.assertIn("last_login", data)
+        self.assertEqual(data["nickname"], "Yeonghyeon Ko")
+        self.assertIn("picture", data)
+        self.assertEqual(data["reputation"], 0)
+        self.assertIn("title", data)
+        self.assertEqual(data["intro"], "Deploying is fun!")
+        self.assertEqual(data["question_count"], 0)
+        self.assertEqual(data["answer_count"], 0)
+        self.assertEqual(data["bookmark_count"], self.YeonghyeonKo_BOOKMARK_COUNT)
 
 
 class PostUserTestCase(UserTestSetting):
@@ -299,6 +386,36 @@ class GetUserUserIDTestCase(UserTestSetting):
         # data = response.json()
         # self.check_guzus(data)
 
+    def test_get_user_user_id_after_activites(self):
+        self.set_up_user_activites()
+
+        response = self.client.get(
+            f"/user/{self.guzus.id}/",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.check_guzus_after_activites(data)
+
+        response = self.client.get(
+            f"/user/{self.eldpswp99.id}/",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.check_eldpswp99_after_activites(data)
+
+        response = self.client.get(
+            f"/user/{self.YeonghyeonKo.id}/",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.check_YeonghyeonKo_after_activites(data)
+
 
 class PutUserMeTestCase(UserTestSetting):
     def setUp(self):
@@ -343,7 +460,7 @@ class PutUserMeTestCase(UserTestSetting):
     def test_put_user_me_too_long_nickname(self):
         response = self.client.put(
             "/user/me/",
-            json.dumps({"password": "12345", "nickname": "Django" * 10}),
+            json.dumps({"password": "12345", "nickname": "n" * 17}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -480,6 +597,15 @@ class PutUserLoginTestCase:
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_put_user_login_too_long_username(self):
+        response = self.client.put(
+            "/user/login/",
+            json.dumps({"username": "1" * 17, "password": "password"}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_put_user_login(self):
         response = self.client.put(
