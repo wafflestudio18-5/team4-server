@@ -162,6 +162,7 @@ elif os.path.exists(secret_file):
     AWS_STORAGE_BUCKET_NAME = secret_info["AWS_STORAGE_BUCKET_NAME"]
     AWS_ACCESS_KEY_ID = secret_info["AWS_ACCESS_KEY_ID"]
     AWS_SECRET_ACCESS_KEY = secret_info["AWS_SECRET_ACCESS_KEY"]
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
 
     # if False it will create unique file names for every uploaded file
     AWS_S3_FILE_OVERWRITE = False
