@@ -1,8 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
-from django.db import IntegrityError
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
-from django.core.paginator import Paginator, EmptyPage
 from rest_framework.decorators import action
 from django.db import transaction
 from rest_framework.permissions import AllowAny, IsAuthenticated
