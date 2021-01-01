@@ -96,13 +96,13 @@ class UserTestSetting(TestCase):
         for i in range(self.eldpswp99_ANSWER_COUNT):
             Answer.objects.create(
                 content=str(i + 1),
-                question=Question.objects.get(id=i + 1),
+                question=Question.objects.get(pk=i + 1),
                 user=self.eldpswp99,
                 vote=i + 1,
             )
         Answer.objects.create(
             content=str(self.eldpswp99_ANSWER_COUNT + 1),
-            question=Question.objects.get(id=self.eldpswp99_ANSWER_COUNT + 1),
+            question=Question.objects.get(pk=self.eldpswp99_ANSWER_COUNT + 1),
             user=self.eldpswp99,
             vote=i + 1,
             is_active=False,
@@ -110,7 +110,7 @@ class UserTestSetting(TestCase):
 
         self.YeonghyeonKo_BOOKMARK_COUNT = 15
         for i in range(self.YeonghyeonKo_BOOKMARK_COUNT):
-            question = Question.objects.get(id=i + 1)
+            question = Question.objects.get(pk=i + 1)
             UserQuestion.objects.create(
                 user=self.YeonghyeonKo, question=question, bookmark=True, rating=0
             )
