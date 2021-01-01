@@ -185,7 +185,27 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = "/static/"
+STATIC_LOCATION = "/static/"
 
-MEDIA_URL = "/media/"
+MEDIA_LOCATION = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "wafflow/media")
+
+
+# AWS S3 settings
+
+AWS_STORAGE_BUCKET_NAME = secret_info["AWS_STORAGE_BUCKET_NAME"]
+AWS_ACCESS_KEY_ID = secret_info["AWS_ACCESS_KEY_ID"]
+AWS_SECRET_ACCESS_KEY = secret_info["AWS_SECRET_ACCESS_KEY"]
+
+# if False it will create unique file names for every uploaded file
+AWS_S3_FILE_OVERWRITE = False
+# the url, that your media and static files will be available at
+AWS_S3_CUSTOM_DOMAIN = "%s.s3.amazonaws.com" % AWS_STORAGE_BUCKET_NAME
+
+# a custom storage file, so we can easily put static and media in one bucket
+STATICFILES_STORAGE = "wafflow.custom_storages.StaticStorage"
+DEFAULT_FILE_STORAGE = "wafflow.custom_storages.MediaStorage"
+
+# the regular Django file settings but with the custom S3 URLs
+STATIC_URL = "https://%s" % (AWS_S3_CUSTOM_DOMAIN + STATIC_LOCATION)
+MEDIA_URL = "https://%s" % (AWS_S3_CUSTOM_DOMAIN + MEDIA_LOCATION)

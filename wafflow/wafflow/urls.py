@@ -12,4 +12,4 @@ urlpatterns = [
     path("", include("user.urls")),
     path("", include("bookmark.urls")),
     path("", include("rate.urls")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + static(settings.MEDIA_LOCATION, document_root=settings.MEDIA_LOCATION)
