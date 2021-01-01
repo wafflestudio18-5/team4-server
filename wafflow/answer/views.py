@@ -5,9 +5,11 @@ from rest_framework.decorators import action
 from django.http import HttpResponsePermanentRedirect
 from django.shortcuts import redirect
 from django.core.paginator import Paginator, EmptyPage
+from django.db import transaction
 
 from django.contrib.auth.models import User
-from question.models import Question
+from tag.models import UserTag
+from question.models import Question, QuestionTag
 from answer.models import Answer
 from answer.constants import *
 from answer.serializers import (
@@ -27,7 +29,7 @@ class AnswerUserViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             user = User.objects.get(pk=pk, is_active=True)
-        except User.DoesNotExist:
+        except (User.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no user with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -90,7 +92,7 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             question = Question.objects.get(pk=pk, is_active=True)
-        except Question.DoesNotExist:
+        except (Question.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no question with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -137,18 +139,23 @@ class AnswerQuestionViewSet(viewsets.GenericViewSet):
 
     def make(self, request, pk=None):
         try:
-            question = Question.objects.get(pk=pk, is_active=True)
-        except Question.DoesNotExist:
+            with transaction.atomic():
+                question = Question.objects.get(pk=pk, is_active=True)
+                data = request.data.copy()
+                data["question_id"] = pk
+                serializer = self.get_serializer(data=data)
+                serializer.is_valid(raise_exception=True)
+                answer = serializer.save()
+                question_tags = QuestionTag.objects.filter(question=question)
+                for question_tag in question_tags:
+                    user_tag, created = UserTag.objects.get_or_create(
+                        user=request.user, tag=question_tag.tag
+                    )
+        except (Question.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no question with the given id"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
-        data = request.data.copy()
-        data["question_id"] = pk
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        answer = serializer.save()
 
         return Response(
             AnswerInfoSerializer(answer, context=self.get_serializer_context()).data,
@@ -174,7 +181,7 @@ class AnswerViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             answer = Answer.objects.get(pk=pk, is_active=True)
-        except Answer.DoesNotExist:
+        except (Answer.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -185,7 +192,7 @@ class AnswerViewSet(viewsets.GenericViewSet):
     def update(self, request, pk=None):
         try:
             answer = Answer.objects.get(pk=pk, is_active=True)
-        except Answer.DoesNotExist:
+        except (Answer.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -209,22 +216,31 @@ class AnswerViewSet(viewsets.GenericViewSet):
 
     def destroy(self, request, pk=None):
         try:
-            answer = Answer.objects.get(pk=pk)
-        except Answer.DoesNotExist:
+            with transaction.atomic():
+                answer = Answer.objects.get(pk=pk)
+                if not answer.is_active:
+                    return Response({}, status=status.HTTP_204_NO_CONTENT)
+                if request.user != answer.user or answer.is_accepted:
+                    return Response(
+                        {"message": "Not allowed to delete this answer"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
+                question = answer.question
+                question_tags = QuestionTag.objects.filter(question=question)
+                for question_tag in question_tags:
+                    user_tag = UserTag.objects.get(
+                        user=request.user, tag=question_tag.tag
+                    )
+                    user_tag.score -= answer.vote
+                    user_tag.save()
+                answer.is_active = False
+                answer.save()
+        except (Answer.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no answer with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        if not answer.is_active:
-            return Response({}, status=status.HTTP_204_NO_CONTENT)
-        if request.user != answer.user or answer.is_accepted:
-            return Response(
-                {"message": "Not allowed to delete this answer"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        answer.is_active = False
-        answer.save()
 
         return Response({})
 
@@ -232,7 +248,7 @@ class AnswerViewSet(viewsets.GenericViewSet):
     def acception(self, request, pk=None):
         try:
             answer = Answer.objects.get(pk=pk, is_active=True)
-        except Answer.DoesNotExist:
+        except (Answer.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no answer with the given id"},
                 status=status.HTTP_404_NOT_FOUND,

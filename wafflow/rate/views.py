@@ -1,10 +1,9 @@
-from django.contrib.auth.models import User
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, api_view
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from question.models import UserQuestion, Question
+from question.models import UserQuestion, Question, QuestionTag
+from tag.models import UserTag
 from answer.models import UserAnswer, Answer
 from comment.models import UserComment, Comment
 
@@ -42,7 +41,13 @@ class RateViewSet(viewsets.GenericViewSet):
             )
 
         rating = int(rating)
-        question.vote += rating - user_question.rating
+        rating_diff = rating - user_question.rating
+        question_tags = QuestionTag.objects.filter(question=question)
+        for question_tag in question_tags:
+            user_tag = UserTag.objects.get(user=question.user, tag=question_tag.tag)
+            user_tag.score += rating_diff
+            user_tag.save()
+        question.vote += rating_diff
         user_question.rating = rating
 
         question.save()
@@ -88,7 +93,13 @@ class RateViewSet(viewsets.GenericViewSet):
             )
 
         rating = int(rating)
-        answer.vote += rating - user_answer.rating
+        rating_diff = rating - user_answer.rating
+        question_tags = QuestionTag.objects.filter(question=answer.question)
+        for question_tag in question_tags:
+            user_tag = UserTag.objects.get(user=answer.user, tag=question_tag.tag)
+            user_tag.score += rating_diff
+            user_tag.save()
+        answer.vote += rating_diff
         user_answer.rating = rating
 
         answer.save()

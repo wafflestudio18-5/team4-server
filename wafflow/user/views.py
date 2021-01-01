@@ -1,5 +1,4 @@
 from django.contrib.auth import authenticate, login, logout
-from django.db import IntegrityError
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
@@ -11,10 +10,12 @@ from user.serializers import (
     UserSerializer,
     UserProfileSerializer,
     UserProfileProduceSerializer,
+    AuthorSerializer,
 )
 from user.token import get_github_data
 from user.models import UserProfile
 from user.constants import *
+from question.views import paginate_objects
 
 
 class UserViewSet(viewsets.GenericViewSet):
@@ -88,8 +89,8 @@ class UserViewSet(viewsets.GenericViewSet):
         password = request.data.get("password")
         github_token = request.data.get("github_token")
 
-        if github_token is None:
-            if len(username) > MAX_LENGTH:
+        if github_token is None or github_token == "":
+            if username is None or len(username) > MAX_LENGTH:
                 return Response(
                     {"message": "Authentication failed"},
                     status=status.HTTP_403_FORBIDDEN,
@@ -99,7 +100,7 @@ class UserViewSet(viewsets.GenericViewSet):
             github_data = get_github_data(github_token)
             try:
                 user = UserProfile.objects.get(github_id=github_data.get("id")).user
-            except UserProfile.DoesNotExist:
+            except (UserProfile.DoesNotExist, AttributeError):
                 return Response(
                     {"message": "Authentication failed"},
                     status=status.HTTP_403_FORBIDDEN,
@@ -131,11 +132,12 @@ class UserViewSet(viewsets.GenericViewSet):
         else:
             try:
                 user = User.objects.get(pk=pk, is_active=True)
-            except (User.DoesNotExist, ValueError) as e:
+            except (User.DoesNotExist, ValueError):
                 return Response(
                     {"message": "There is no user with that id"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
+
         return Response(self.get_serializer(user.profile).data)
 
     def update(self, request, pk=None):
@@ -170,3 +172,46 @@ class UserViewSet(viewsets.GenericViewSet):
             return Response({}, status=status.HTTP_200_OK)
         else:
             return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+
+class UserListViewSet(viewsets.GenericViewSet):
+    queryset = User.objects.filter(is_active=True)
+    permission_classes = (AllowAny,)
+    serializer_class = AuthorSerializer
+
+    def list(self, request):
+        search = request.query_params.get("search")
+        if search is None or search == "":
+            users = self.get_queryset()
+        else:
+            users = User.objects.filter(
+                profile__nickname__icontains=search, is_active=True
+            )
+
+        users = sort_users(request, users)
+
+        if users is None:
+            return Response(
+                {"message": "Invalid sorted_by"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        users = paginate_objects(request, users, USER_PER_PAGE)
+        if users is None:
+            return Response(
+                {"message": "Invalid page"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"users": self.get_serializer(users, many=True).data})
+
+
+def sort_users(request, users):
+    sorted_by = request.query_params.get("sorted_by")
+    if not (sorted_by in (REPUTATION, NEWEST)):
+        return None
+    if sorted_by == REPUTATION:
+        users = users.order_by("-profile__reputation")
+    elif sorted_by == NEWEST:
+        users = users.order_by("-profile__created_at")
+    return users
