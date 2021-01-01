@@ -29,7 +29,7 @@ class CommentViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             comment = Comment.objects.get(pk=pk, is_active=True)
-        except Comment.DoesNotExist:
+        except (Comment.DoesNotExist, ValueError):
             return Response(
                 {"error": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -39,7 +39,7 @@ class CommentViewSet(viewsets.GenericViewSet):
     def update(self, request, pk=None):
         try:
             comment = Comment.objects.get(pk=pk, is_active=True)
-        except Comment.DoesNotExist:
+        except (Comment.DoesNotExist, ValueError):
             return Response(
                 {"error": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -62,7 +62,7 @@ class CommentViewSet(viewsets.GenericViewSet):
     def destroy(self, request, pk=None):
         try:
             comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
+        except (Comment.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
