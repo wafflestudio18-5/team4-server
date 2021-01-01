@@ -8,6 +8,8 @@ from comment.models import Comment
 from question.models import Question, UserQuestion, Tag, QuestionTag
 from user.models import UserProfile
 
+import json
+
 
 class QuestionTestSetting(TestCase):
     def set_up_users(self):
@@ -54,7 +56,7 @@ class QuestionTestSetting(TestCase):
         self.kyh3_token = "Token " + Token.objects.get(user=self.kyh3).key
 
     def set_up_questions(self):
-        question_a = Question.objects.create(
+        question1 = Question.objects.create(
             user=self.kyh1,
             title="hello1",
             content="I don't know1",
@@ -62,9 +64,9 @@ class QuestionTestSetting(TestCase):
         tags = "github+python+django"
         for tag in tags.split("+"):
             tag, created = Tag.objects.get_or_create(name=tag)
-            QuestionTag.objects.create(question=question_a, tag=tag)
+            QuestionTag.objects.create(question=question1, tag=tag)
 
-        question_b = Question.objects.create(
+        question2 = Question.objects.create(
             user=self.kyh2,
             title="hello2",
             content="I don't know2",
@@ -72,9 +74,9 @@ class QuestionTestSetting(TestCase):
         tags = "github+javascript+react"
         for tag in tags.split("+"):
             tag, created = Tag.objects.get_or_create(name=tag)
-            QuestionTag.objects.create(question=question_b, tag=tag)
+            QuestionTag.objects.create(question=question2, tag=tag)
 
-        question_c = Question.objects.create(
+        question3 = Question.objects.create(
             user=self.kyh2,
             title="hello3",
             content="I don't know3",
@@ -102,8 +104,9 @@ class QuestionTestSetting(TestCase):
         self.assertEqual(UserAnswer.objects.all().count(), user_answer_count)
 
 
-class GetQuestionInfoTestCase(QuestionTestSetting):
+class QuestionInfoTestCase(QuestionTestSetting):
     def assert_in_question_info(self, data):
+        author = data["author"]
         self.assertIn("id", data)
         self.assertIn("created_at", data)
         self.assertIn("updated_at", data)
@@ -111,15 +114,23 @@ class GetQuestionInfoTestCase(QuestionTestSetting):
         self.assertIn("content", data)
         self.assertIn("vote", data)
         self.assertIn("has_accepted", data)
-        self.assertIsNotNone(data["author"])
-
-        author = data["author"]
+        self.assertIsNotNone(data.get("author"))
         self.assertIn("id", author)
         self.assertIn("nickname", author)
         self.assertIn("reputation", author)
 
+    def assert_in_question_info_except_author_and_content(self, data):
+        self.assertIn("id", data)
+        self.assertIn("created_at", data)
+        self.assertIn("updated_at", data)
+        self.assertIn("title", data)
+        self.assertIn("vote", data)
+        self.assertIn("has_accepted", data)
+        self.assertIsNone(data.get("author"))
+        self.assertIsNone(data.get("content"))
 
-class GetQuestionQuestionIdTestCase(GetQuestionInfoTestCase):
+
+class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
     client = Client()
 
     def setUp(self):
@@ -221,3 +232,102 @@ class GetQuestionQuestionIdTestCase(GetQuestionInfoTestCase):
         self.assertEqual(Question.objects.all().count(), 3)
         self.assertEqual(UserQuestion.objects.all().count(), 2)
         self.check_db_count(user_question_count=2)
+
+
+class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
+    client = Client()
+
+    def setUp(self):
+        self.set_up_users()
+        self.set_up_questions()
+
+    def test_get_question_user_invalid_user_id(self):
+        response = self.client.get(f"/question/user/-1/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_question_user_user_id_sorted_by_views(self):
+        user2 = User.objects.get(username="kyh2")
+        response = self.client.get(f"/question/user/{user2.id}/?sorted_by=views&page=1")
+
+        data = response.json()
+        self.assertIsNotNone(data.get("questions"))
+        for question in data["questions"]:
+            self.assert_in_question_info_except_author_and_content(question)
+            self.assertEqual(question["view_count"], 0)
+
+            for view_count in range(question["id"]):
+                response = self.client.get(f"/question/{question['id']}/")
+            data = response.json()
+            self.assertEqual(data["id"], question["id"])
+            self.assertEqual(data["view_count"], question["id"])
+
+        response = self.client.get(f"/question/user/{user2.id}/?sorted_by=views&page=1")
+        data = response.json()
+        self.assertIsNotNone(data.get("questions"))
+        self.assertGreater(
+            data["questions"][0]["view_count"], data["questions"][1]["view_count"]
+        )
+
+    def test_get_question_user_user_id_sorted_by_votes(self):
+        user2 = User.objects.get(username="kyh2")
+        response = self.client.get(f"/question/user/{user2.id}/?sorted_by=votes&page=1")
+        data = response.json()
+        self.assertIsNotNone(data.get("questions"))
+        self.assertEqual(data["questions"][0]["vote"], data["questions"][1]["vote"])
+        question1 = data["questions"][0]
+
+        for question in data["questions"]:
+            self.assert_in_question_info_except_author_and_content(question)
+            self.assertEqual(question["vote"], 0)
+            question_change_vote = Question.objects.get(id=question["id"])
+            question_change_vote.vote = question["id"]
+            question_change_vote.save()
+
+        response = self.client.get(f"/question/user/{user2.id}/?sorted_by=votes&page=1")
+        data = response.json()
+        self.assertIsNotNone(data.get("questions"))
+        self.assertGreater(data["questions"][0]["vote"], data["questions"][1]["vote"])
+        self.assertNotEqual(question1["id"], data["questions"][0]["id"])
+
+    def test_get_question_user_user_id_sorted_by_updated_at(self):
+        user2 = User.objects.get(username="kyh2")
+        response = self.client.get(
+            f"/question/user/{user2.id}/?sorted_by=activity&page=1"
+        )
+        data = response.json()
+        self.assertIsNotNone(data.get("questions"))
+        question1 = data["questions"][0]
+        question2 = data["questions"][1]
+        self.assertGreater(question1["updated_at"], question2["updated_at"])
+
+        for question in data["questions"]:
+            self.assert_in_question_info_except_author_and_content(question)
+
+        question_change_acivity = Question.objects.get(id=question2["id"])
+        question_change_acivity.vote = 333
+        question_change_acivity.save()
+
+        response = self.client.get(
+            f"/question/user/{user2.id}/?sorted_by=activity&page=1"
+        )
+        data = response.json()
+        self.assertIsNotNone(data.get("questions"))
+        self.assertEqual(question1["id"], data["questions"][1]["id"])
+        self.assertEqual(question2["id"], data["questions"][0]["id"])
+        self.assertNotEqual(question2["vote"], data["questions"][0]["vote"])
+        self.assertGreater(
+            data["questions"][0]["updated_at"], data["questions"][1]["updated_at"]
+        )
+
+    def test_get_question_user_user_id_sorted_by_created_at(self):
+        user2 = User.objects.get(username="kyh2")
+        response = self.client.get(
+            f"/question/user/{user2.id}/?sorted_by=newest&page=1"
+        )
+        data = response.json()
+        self.assertIsNotNone(data.get("questions"))
+        for question in data["questions"]:
+            self.assert_in_question_info_except_author_and_content(question)
+        self.assertGreater(
+            data["questions"][0]["created_at"], data["questions"][1]["created_at"]
+        )
