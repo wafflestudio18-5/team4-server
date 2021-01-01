@@ -84,6 +84,14 @@ class UserTestSetting(TestCase):
                 user=self.guzus,
                 vote=i + 1,
             )
+        Question.objects.create(
+            title=str(self.guzus_QUESTION_COUNT + 1),
+            content=str(self.guzus_QUESTION_COUNT + 1),
+            user=self.guzus,
+            vote=i + 1,
+            is_active=False,
+        )
+
         self.eldpswp99_ANSWER_COUNT = 30
         for i in range(self.eldpswp99_ANSWER_COUNT):
             Answer.objects.create(
@@ -92,6 +100,14 @@ class UserTestSetting(TestCase):
                 user=self.eldpswp99,
                 vote=i + 1,
             )
+        Answer.objects.create(
+            content=str(self.eldpswp99_ANSWER_COUNT + 1),
+            question=Question.objects.get(id=self.eldpswp99_ANSWER_COUNT + 1),
+            user=self.eldpswp99,
+            vote=i + 1,
+            is_active=False,
+        )
+
         self.YeonghyeonKo_BOOKMARK_COUNT = 15
         for i in range(self.YeonghyeonKo_BOOKMARK_COUNT):
             question = Question.objects.get(id=i + 1)
