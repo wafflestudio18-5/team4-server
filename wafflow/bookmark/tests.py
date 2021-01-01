@@ -1,16 +1,12 @@
 from django.contrib.auth.models import User
-from django.test import TestCase, Client
+from django.test import Client
 from rest_framework import status
 from django.utils import timezone
-from rest_framework.authtoken.models import Token
 
 from bookmark.constants import *
-from answer.models import Answer, UserAnswer
-from comment.models import Comment
+from answer.models import Answer
 from question.models import Question, UserQuestion, Tag, QuestionTag
 from answer.tests import UserQuestionTestSetting
-
-import json
 
 
 class BookmarkTestCase(UserQuestionTestSetting):
