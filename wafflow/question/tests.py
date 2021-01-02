@@ -398,7 +398,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
-    def test_get_question_tags_valid_sorted_by_most_frequent(self):
+    def test_get_question_tags_sorted_by_most_frequent(self):
         response = self.client.get(
             f"/question/tagged/?tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
@@ -427,7 +427,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
                 data["questions"][0]["view_count"], data["questions"][1]["view_count"]
             )
 
-    def test_get_question_tags_valid_sorted_by_most_votes(self):
+    def test_get_question_tags_sorted_by_most_votes(self):
         response = self.client.get(
             f"/question/tagged/?tags=&sorted_by=most_votes&page=1",
             content_type="application/json",
@@ -457,7 +457,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
             )
             self.assertNotEqual(question1["id"], data["questions"][0]["id"])
 
-    def test_get_question_tags_valid_sorted_by_newest(self):
+    def test_get_question_tags_sorted_by_newest(self):
         response = self.client.get(
             f"/question/tagged/?tags=&sorted_by=newest&page=1",
             content_type="application/json",
@@ -472,7 +472,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
             self.assertGreater(question1["created_at"], question3["created_at"])
             self.assertGreater(question1["id"], question3["id"])
 
-    def test_get_question_tags_valid_sorted_by_recent_activity(self):
+    def test_get_question_tags_sorted_by_recent_activity(self):
         response = self.client.get(
             f"/question/tagged/?tags=&sorted_by=recent_activity&page=1",
             content_type="application/json",
@@ -504,7 +504,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
                 data["questions"][0]["updated_at"], data["questions"][1]["updated_at"]
             )
 
-    def test_get_question_tags_valid_filter_by_none(self):
+    def test_get_question_tags_filter_by_none(self):
         response = self.client.get(
             f"/question/tagged/?tags=&sorted_by=newest&page=1",
             content_type="application/json",
@@ -512,7 +512,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_db_count()
 
-    def test_get_question_tags_valid_filter_by_no_answer(self):
+    def test_get_question_tags_filter_by_no_answer(self):
         response = self.client.get(
             f"/question/tagged/?tags=&sorted_by=newest&filter_by=no_answer&page=1",
             content_type="application/json",
@@ -540,7 +540,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
         if data.get("questions"):
             self.assertEqual(len(data["questions"]), 3 - answer_count)
 
-    def test_get_question_tags_valid_filter_by_no_accepted_answer(self):
+    def test_get_question_tags_filter_by_no_accepted_answer(self):
         tags = "github+react+typescript"
         response = self.client.get(
             f"/question/tagged/?tags={tags}&sorted_by=newest&filter_by=no_accepted_answer&page=1",
@@ -567,6 +567,248 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
                 question.save()
             response = self.client.get(
                 f"/question/tagged/?tags={tags}&sorted_by=newest&filter_by=no_accepted_answer&page=1",
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+            if data.get("questions"):
+                self.assertEqual(len(data["questions"]), 1)
+
+
+class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
+    client = Client()
+
+    def setUp(self):
+        self.set_up_users()
+        self.set_up_questions()
+
+    def test_get_question_keywords_invalid_request(self):
+        keywords = "know"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}/",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&sorted_by=&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&sorted_by=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&sorted_by=votes&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&sorted_by=most_votes&page=asdf",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&sorted_by=most_votes&page=-1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+    def test_get_question_keywords_sorted_by_most_frequent(self):
+        keywords = "know+spark"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+        data = response.json()
+        if data.get("questions"):
+            for question in data["questions"]:
+                self.assert_in_question_info(question)
+                self.assertEqual(question["view_count"], 0)
+
+                for view_count in range(question["id"]):
+                    response = self.client.get(f"/question/{question['id']}/")
+                data = response.json()
+                self.assertEqual(data["id"], question["id"])
+                self.assertEqual(data["view_count"], question["id"])
+
+            response = self.client.get(
+                f"/question/search/keywords/?keywords={keywords}&sorted_by=most_frequent&page=1",
+                content_type="application/json",
+            )
+            data = response.json()
+            self.assertIsNotNone(data.get("questions"))
+            self.assertGreater(
+                data["questions"][0]["view_count"], data["questions"][1]["view_count"]
+            )
+
+    def test_get_question_keywords_sorted_by_most_votes(self):
+        keywords = "know+spark"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+        data = response.json()
+        if data.get("questions"):
+            self.assertEqual(data["questions"][0]["vote"], data["questions"][1]["vote"])
+            question1 = data["questions"][0]
+
+            for question in data["questions"]:
+                self.assert_in_question_info(question)
+                self.assertEqual(question["vote"], 0)
+                question_change_vote = Question.objects.get(id=question["id"])
+                question_change_vote.vote = question["id"]
+                question_change_vote.save()
+
+            response = self.client.get(
+                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+                content_type="application/json",
+            )
+            data = response.json()
+            self.assertIsNotNone(data.get("questions"))
+            self.assertGreater(
+                data["questions"][0]["vote"], data["questions"][1]["vote"]
+            )
+            self.assertNotEqual(question1["id"], data["questions"][0]["id"])
+
+    def test_get_question_keywords_sorted_by_newest(self):
+        keywords = "know+spark"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+        data = response.json()
+        if data.get("questions"):
+            questions = data["questions"]
+            question1 = questions[0]
+            question3 = questions[2]
+            self.assertGreater(question1["created_at"], question3["created_at"])
+            self.assertGreater(question1["id"], question3["id"])
+
+    def test_get_question_keywords_sorted_by_recent_activity(self):
+        keywords = "know+spark"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+        data = response.json()
+        if data.get("questions"):
+            question1 = data["questions"][0]
+            question2 = data["questions"][1]
+            self.assertGreater(question1["updated_at"], question2["updated_at"])
+
+            for question in data["questions"]:
+                self.assert_in_question_info(question)
+
+            question_change_acivity = Question.objects.get(id=question2["id"])
+            question_change_acivity.vote = 333
+            question_change_acivity.save()
+
+            response = self.client.get(
+                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+                content_type="application/json",
+            )
+            data = response.json()
+            self.assertIsNotNone(data.get("questions"))
+            self.assertEqual(question1["id"], data["questions"][1]["id"])
+            self.assertEqual(question2["id"], data["questions"][0]["id"])
+            self.assertNotEqual(question2["vote"], data["questions"][0]["vote"])
+            self.assertGreater(
+                data["questions"][0]["updated_at"], data["questions"][1]["updated_at"]
+            )
+
+    def test_get_question_keywords_filter_by_none(self):
+        keywords = "know+spark"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+
+    def test_get_question_keywords_filter_by_no_answer(self):
+        keywords = "know+spark"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+        data = response.json()
+        answer_count = 0
+        if data.get("questions"):
+            self.assertEqual(len(data["questions"]), 3 - answer_count)
+            question = Question.objects.get(id=data["questions"][0]["id"])
+            Answer.objects.create(
+                content="I know",
+                question=question,
+                user=self.kyh1,
+            )
+            answer_count += 1
+
+            response = self.client.get(
+                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+            if data.get("questions"):
+                self.assertEqual(len(data["questions"]), 3 - answer_count)
+
+    def test_get_question_keywords_filter_by_no_accepted_answer(self):
+        keywords = "know+spark"
+        response = self.client.get(
+            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+        data = response.json()
+
+        if data.get("questions"):
+            self.assertEqual(len(data["questions"]), 2)
+            question = Question.objects.get(id=data["questions"][0]["id"])
+            with transaction.atomic():
+                Answer.objects.create(
+                    content="I know",
+                    question=question,
+                    user=self.kyh1,
+                )
+                answer = Answer.objects.filter(user=self.kyh1).last()
+                answer.is_accepted = True
+                answer.save()
+                question = Question.objects.filter(id=answer.question_id).last()
+                question.has_accepted = True
+                question.save()
+            response = self.client.get(
+                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
                 content_type="application/json",
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
