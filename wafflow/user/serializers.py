@@ -6,6 +6,7 @@ from rest_framework.authtoken.models import Token
 from user.models import UserProfile
 from answer.models import Answer
 from question.models import Question, UserQuestion
+from tag.models import UserTag
 from rest_framework.validators import UniqueValidator
 from user.constants import *
 
@@ -131,6 +132,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     answer_count = serializers.SerializerMethodField()
     bookmark_count = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
+    tag_count = serializers.SerializerMethodField()
 
     # only for drf
     password = serializers.CharField(write_only="True")
@@ -155,6 +157,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "title",
             "intro",
             "github_token",
+            "tag_count",
         )
 
     def get_answer_count(self, user_profile):
@@ -167,6 +170,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return UserQuestion.objects.filter(
             user=user_profile.user, bookmark=True, question__is_active=True
         ).count()
+
+    def get_tag_count(self, user_profile):
+        return UserTag.objects.filter(user=user_profile.user).count()
 
     def validate(self, attrs):
         raise serializers.ValidationError(
