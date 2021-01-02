@@ -331,3 +331,228 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
         self.assertGreater(
             data["questions"][0]["created_at"], data["questions"][1]["created_at"]
         )
+
+
+class PostQuestionTestCase(QuestionInfoTestCase):
+    client = Client()
+
+    def setUp(self):
+        self.set_up_users()
+        self.set_up_questions()
+
+    def test_post_question_invalid_token(self):
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.check_db_count()
+
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            HTTP_AUTHORIZATION="asdf",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.check_db_count()
+
+    def test_post_question_invalid_request(self):
+        response = self.client.post(
+            f"/question/",
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"title": "hello4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"title": ""}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"content": ""}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+    def test_post_question_too_long_title(self):
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"title": "h" * 201, "content": "a"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+    def test_post_question_too_long_content(self):
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"title": "hello4", "content": "a" * 5001}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+    def test_post_question(self):
+        response = self.client.post(
+            f"/question/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assert_in_question_info(data)
+        self.assertEqual(data["title"], "hello4")
+        self.assertEqual(data["content"], "I don't know4")
+        self.check_db_count(question_count=4)
+
+
+class PutQuestionTestCase(QuestionInfoTestCase):
+    client = Client()
+
+    def setUp(self):
+        self.set_up_users()
+        self.set_up_questions()
+
+    def test_put_question_invalid_request(self):
+        response = self.client.put(
+            f"/question/-1/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_db_count()
+
+        question_last = Question.objects.all().last()
+        response = self.client.put(
+            f"/question/{question_last.id+1}/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.check_db_count()
+
+        user_question_last = self.kyh1.questions.last()
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh2_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "a" * 201, "content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "hello4", "content": "a" * 5001}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.check_db_count()
+
+    def test_put_question(self):
+        user_question_last = self.kyh1.questions.last()
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "", "content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "hello4", "content": ""}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"title": "hello4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({"content": "I don't know4"}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
+
+        response = self.client.put(
+            f"/question/{user_question_last.id}/",
+            json.dumps({}),
+            HTTP_AUTHORIZATION=self.kyh1_token,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_db_count()
