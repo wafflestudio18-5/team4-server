@@ -32,11 +32,11 @@ class PostBookmarkTestCase(BookmarkTestCase):
     def test_post_bookmark_question_question_id_invalid_token(self):
         question = Question.objects.get(title="Hello")
 
-        response = self.client.post(f"/bookmark/question/{question.id}/")
+        response = self.client.post(f"/api/bookmark/question/{question.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         response = self.client.post(
-            f"/bookmark/question/{question.id}/", HTTP_AUTHORIZATION="asdf"
+            f"/api/bookmark/question/{question.id}/", HTTP_AUTHORIZATION="asdf"
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -46,7 +46,7 @@ class PostBookmarkTestCase(BookmarkTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.post(
-            f"/bookmark/question/-1/", HTTP_AUTHORIZATION=self.eldpswp99_token
+            f"/api/bookmark/question/-1/", HTTP_AUTHORIZATION=self.eldpswp99_token
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -58,7 +58,7 @@ class PostBookmarkTestCase(BookmarkTestCase):
         question.save()
 
         response = self.client.post(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -78,14 +78,15 @@ class PostBookmarkTestCase(BookmarkTestCase):
         user_question.save()
 
         response = self.client.post(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         response = self.client.post(
-            f"/bookmark/question/{question.id}/", HTTP_AUTHORIZATION=self.qwerty_token
+            f"/api/bookmark/question/{question.id}/",
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -106,7 +107,7 @@ class PostBookmarkTestCase(BookmarkTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.post(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -123,7 +124,7 @@ class PostBookmarkTestCase(BookmarkTestCase):
         self.assertEqual(data["bookmarked"], True)
 
         response = self.client.post(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -137,7 +138,7 @@ class PostBookmarkTestCase(BookmarkTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.post(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -187,11 +188,11 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
     def test_delete_bookmark_question_question_id_invalid_token(self):
         question = Question.objects.get(title="Hello")
 
-        response = self.client.delete(f"/bookmark/question/{question.id}/")
+        response = self.client.delete(f"/api/bookmark/question/{question.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         response = self.client.delete(
-            f"/bookmark/question/{question.id}/", HTTP_AUTHORIZATION="asdf"
+            f"/api/bookmark/question/{question.id}/", HTTP_AUTHORIZATION="asdf"
         )
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -201,7 +202,7 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.delete(
-            f"/bookmark/question/-1/", HTTP_AUTHORIZATION=self.eldpswp99_token
+            f"/api/bookmark/question/-1/", HTTP_AUTHORIZATION=self.eldpswp99_token
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -213,7 +214,7 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         question.save()
 
         response = self.client.delete(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -224,7 +225,8 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.delete(
-            f"/bookmark/question/{question.id}/", HTTP_AUTHORIZATION=self.qwerty_token
+            f"/api/bookmark/question/{question.id}/",
+            HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -246,7 +248,7 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         self.check_db_count(user_question_count=2)
 
         response = self.client.delete(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
         eldpswp99 = User.objects.get(username="eldpswp99")
@@ -267,7 +269,7 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.delete(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -286,7 +288,7 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         self.assertIsNone(user_question.bookmark_at)
 
         response = self.client.delete(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -308,7 +310,7 @@ class DeleteBookmarkTestCase(BookmarkTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.delete(
-            f"/bookmark/question/{question.id}/",
+            f"/api/bookmark/question/{question.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -378,42 +380,42 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
         QuestionTag.objects.create(question=question, tag=tag)
 
     def test_get_bookmark_user_me_invalid_token(self):
-        resopnse = self.client.get(f"/bookmark/user/me/?sorted_by=votes&page=1")
+        resopnse = self.client.get(f"/api/bookmark/user/me/?sorted_by=votes&page=1")
         self.assertEqual(resopnse.status_code, status.HTTP_401_UNAUTHORIZED)
 
         resopnse = self.client.get(
-            f"/bookmark/user/me/?sorted_by=votes&page=1", HTTP_AUTHORIZATION="asf"
+            f"/api/bookmark/user/me/?sorted_by=votes&page=1", HTTP_AUTHORIZATION="asf"
         )
         self.assertEqual(resopnse.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_get_bookmark_user_me_invalid_page(self):
         resopnse = self.client.get(
-            f"/bookmark/user/me/?sorted_by=votes&page=-1",
+            f"/api/bookmark/user/me/?sorted_by=votes&page=-1",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
         self.assertEqual(resopnse.status_code, status.HTTP_400_BAD_REQUEST)
 
         resopnse = self.client.get(
-            f"/bookmark/user/me/?sorted_by=votes&page=9999",
+            f"/api/bookmark/user/me/?sorted_by=votes&page=9999",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
         self.assertEqual(resopnse.status_code, status.HTTP_400_BAD_REQUEST)
 
         resopnse = self.client.get(
-            f"/bookmark/user/me/?sorted_by=votes",
+            f"/api/bookmark/user/me/?sorted_by=votes",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
         self.assertEqual(resopnse.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_get_bookmark_user_me_invalid_sorted_by(self):
         resopnse = self.client.get(
-            f"/bookmark/user/me/?sorted_by=asfd&page=1",
+            f"/api/bookmark/user/me/?sorted_by=asfd&page=1",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
         self.assertEqual(resopnse.status_code, status.HTTP_400_BAD_REQUEST)
 
         resopnse = self.client.get(
-            f"/bookmark/user/me/?&page=1", HTTP_AUTHORIZATION=self.eldpswp99_token
+            f"/api/bookmark/user/me/?&page=1", HTTP_AUTHORIZATION=self.eldpswp99_token
         )
         self.assertEqual(resopnse.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -429,7 +431,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
         user_question.save()
 
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=votes&page=1",
+            f"/api/bookmark/user/me/?sorted_by=votes&page=1",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -496,7 +498,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
 
     def test_get_bookmark_user_me_sorted_by_votes(self):
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=votes&page=1",
+            f"/api/bookmark/user/me/?sorted_by=votes&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -514,7 +516,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
             vote -= 1
 
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=votes&page=2",
+            f"/api/bookmark/user/me/?sorted_by=votes&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -538,7 +540,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
         question.save()
 
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=activity&page=1",
+            f"/api/bookmark/user/me/?sorted_by=activity&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -567,7 +569,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
                 vote -= 1
 
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=activity&page=2",
+            f"/api/bookmark/user/me/?sorted_by=activity&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -586,7 +588,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
 
     def test_get_bookmark_user_me_sorted_by_newest(self):
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=newest&page=1",
+            f"/api/bookmark/user/me/?sorted_by=newest&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -607,7 +609,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
             vote -= 1
 
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=newest&page=2",
+            f"/api/bookmark/user/me/?sorted_by=newest&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -626,7 +628,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
 
     def test_get_bookmark_user_me_sorted_by_view_count(self):
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=views&page=1",
+            f"/api/bookmark/user/me/?sorted_by=views&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -644,7 +646,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
             vote += 1
 
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=views&page=2",
+            f"/api/bookmark/user/me/?sorted_by=views&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -666,7 +668,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
         qwerty = User.objects.get(username="qwerty")
         self.bookmark(qwerty, question)
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=added&page=1",
+            f"/api/bookmark/user/me/?sorted_by=added&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -688,7 +690,7 @@ class GetBookmarkUserMeTestCase(UserQuestionTestSetting):
                 vote = self.QUESTION_COUNT
 
         response = self.client.get(
-            f"/bookmark/user/me/?sorted_by=added&page=2",
+            f"/api/bookmark/user/me/?sorted_by=added&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 

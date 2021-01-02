@@ -162,7 +162,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         answer.is_accepted = True
         answer.save()
 
-        response = self.client.get(f"/answer/{answer.id}/")
+        response = self.client.get(f"/api/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -182,10 +182,10 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         self.check_db_count()
 
     def test_get_answer_answer_id_wrong_request(self):
-        response = self.client.get(f"/answer/-1/")
+        response = self.client.get(f"/api/answer/-1/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        response = self.client.get(f"/answer/99999/")
+        response = self.client.get(f"/api/answer/99999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -194,7 +194,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         answer.is_active = False
         answer.save()
 
-        response = self.client.get(f"/answer/{answer.id}/")
+        response = self.client.get(f"/api/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -211,7 +211,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
                 content="b" * (loop_count + 1),
             )
 
-        response = self.client.get(f"/answer/{answer.id}/")
+        response = self.client.get(f"/api/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -229,7 +229,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         comment.is_active = False
         comment.save()
 
-        response = self.client.get(f"/answer/{answer.id}/")
+        response = self.client.get(f"/api/answer/{answer.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -248,7 +248,7 @@ class GetAnswerAnswerIdTestCase(GetAnswerInfoTestCase):
         answer.save()
 
         response = self.client.get(
-            f"/answer/{answer.id}/", HTTP_AUTHORIZATION=self.eldpswp99_token
+            f"/api/answer/{answer.id}/", HTTP_AUTHORIZATION=self.eldpswp99_token
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -285,14 +285,16 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         self.assertIn("is_accepted", data)
 
     def test_get_answer_user_user_id_invalid_id(self):
-        response = self.client.get(f"/answer/user/-1/")
+        response = self.client.get(f"/api/answer/user/-1/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def test_get_answer_user_user_id_invalid_sorted_by(self):
         user = User.objects.get(username="eldpswp99")
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=asdf&page={1}")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=asdf&page={1}"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
@@ -301,24 +303,28 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         user = User.objects.get(username="eldpswp99")
         user.is_active = False
         user.save()
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page={1}")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=votes&page={1}"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
     def test_get_answer_user_user_id_invalid_page(self):
         user = User.objects.get(username="eldpswp99")
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=-1")
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
         response = self.client.get(
-            f"/answer/user/{user.id}/?sorted_by=votes&page=99999"
+            f"/api/answer/user/{user.id}/?sorted_by=votes&page=-1"
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=votes&page=99999"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        response = self.client.get(f"/api/answer/user/{user.id}/?sorted_by=votes")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
@@ -331,7 +337,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         answer.is_accepted = True
         answer.save()
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=1")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=votes&page=1"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
 
@@ -350,7 +358,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
             )
             vote -= 1
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=2")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=votes&page=2"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
 
@@ -380,7 +390,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         answer_change_vote.vote = 100
         answer_change_vote.save()
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=activity&page=1")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=activity&page=1"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -407,7 +419,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
 
             idx += 1
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=activity&page=2")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=activity&page=2"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -433,7 +447,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
         for answer in range(CREATE_COUNT):
             Answer.objects.create(user=user, question=question, vote=100 + answer)
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=newest&page=1")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=newest&page=1"
+        )
         data = response.json()
         self.assertIsNotNone(data["answers"])
         answers = data["answers"]
@@ -448,7 +464,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
                 vote = 45
             self.assertEqual(answer["is_accepted"], False)
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=newest&page=2")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=newest&page=2"
+        )
 
         data = response.json()
         self.assertIsNotNone(data["answers"])
@@ -468,7 +486,9 @@ class GetAnswerUserUserIDTestCase(MultipleAnswerSetUp):
     def test_get_answer_user_user_id_no_answer(self):
         user = User.objects.get(username="qwerty")
 
-        response = self.client.get(f"/answer/user/{user.id}/?sorted_by=votes&page=1")
+        response = self.client.get(
+            f"/api/answer/user/{user.id}/?sorted_by=votes&page=1"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
@@ -483,7 +503,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
     client = Client()
 
     def test_get_answer_question_question_id_invalid_id(self):
-        response = self.client.get(f"/answer/question/{-1}/?sorted_by=votes&page=1")
+        response = self.client.get(f"/api/answer/question/{-1}/?sorted_by=votes&page=1")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -493,7 +513,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         question.save()
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=votes&page=1"
+            f"/api/answer/question/{question.id}/?sorted_by=votes&page=1"
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
@@ -502,7 +522,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         question = Question.objects.get(title="Hello")
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=asdf&page=1"
+            f"/api/answer/question/{question.id}/?sorted_by=asdf&page=1"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
@@ -511,16 +531,18 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         question = Question.objects.get(title="Hello")
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=votes&page=-1"
+            f"/api/answer/question/{question.id}/?sorted_by=votes&page=-1"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=votes&page=9999"
+            f"/api/answer/question/{question.id}/?sorted_by=votes&page=9999"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        response = self.client.get(f"/answer/question/{question.id}/?sorted_by=votes")
+        response = self.client.get(
+            f"/api/answer/question/{question.id}/?sorted_by=votes"
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
@@ -531,7 +553,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         )
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=votes&page=1"
+            f"/api/answer/question/{question.id}/?sorted_by=votes&page=1"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -559,7 +581,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             )
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=votes&page=1",
+            f"/api/answer/question/{question.id}/?sorted_by=votes&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -584,7 +606,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             vote -= 1
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=votes&page=2",
+            f"/api/answer/question/{question.id}/?sorted_by=votes&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -634,7 +656,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             )
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=activity&page=1",
+            f"/api/answer/question/{question.id}/?sorted_by=activity&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -676,7 +698,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             idx += 1
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=activity&page=2",
+            f"/api/answer/question/{question.id}/?sorted_by=activity&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -727,7 +749,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
         UserAnswer.objects.create(user=qwerty, answer=answer, rating=-1)
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=oldest&page=1",
+            f"/api/answer/question/{question.id}/?sorted_by=oldest&page=1",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -763,7 +785,7 @@ class GetAnswerQuestionQuestionIDTestCase(GetAnswerInfoTestCase, MultipleAnswerS
             idx += 1
 
         response = self.client.get(
-            f"/answer/question/{question.id}/?sorted_by=oldest&page=2",
+            f"/api/answer/question/{question.id}/?sorted_by=oldest&page=2",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -821,7 +843,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.post(
-            f"/answer/question/{question.id}/",
+            f"/api/answer/question/{question.id}/",
             json.dumps({"content": "world"}),
             content_type="application/json",
         )
@@ -829,7 +851,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.post(
-            f"/answer/question/{question.id}/",
+            f"/api/answer/question/{question.id}/",
             json.dumps({"content": "world"}),
             HTTP_AUTHORIZATION="asdf",
             content_type="application/json",
@@ -840,7 +862,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
 
     def post_answer_question_question_id_invalid_question_id(self):
         response = self.client.post(
-            f"/answer/question/-1/",
+            f"/api/answer/question/-1/",
             json.dumps({"content": "world"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -855,7 +877,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         question.save()
 
         response = self.client.post(
-            f"/answer/question/{question.id}/",
+            f"/api/answer/question/{question.id}/",
             json.dumps({"content": "world"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -868,7 +890,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.post(
-            f"/answer/question/{question.id}",
+            f"/api/answer/question/{question.id}",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
         )
@@ -876,7 +898,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         response = self.client.post(
-            f"/answer/question/{question.id}",
+            f"/api/answer/question/{question.id}",
             json.dumps({"content": ""}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -889,7 +911,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.post(
-            f"/answer/question/{question.id}/",
+            f"/api/answer/question/{question.id}/",
             json.dumps({"content": "a" * 5001}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -902,7 +924,7 @@ class PostAnswerTestCase(PostPutAnswerTestCase):
         question = Question.objects.get(title="Hello")
 
         response = self.client.post(
-            f"/answer/question/{question.id}/",
+            f"/api/answer/question/{question.id}/",
             json.dumps({"content": "world"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -941,7 +963,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         answer = Answer.objects.get(content="world")
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps({"content": "asdf"}),
             content_type="application/json",
         )
@@ -949,7 +971,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION="asdf",
             content_type="application/json",
@@ -960,7 +982,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
 
     def test_put_answer_answer_id_invalid_id(self):
         response = self.client.put(
-            f"/answer/-1/",
+            f"/api/answer/-1/",
             json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -974,7 +996,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         answer.save()
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -986,7 +1008,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         answer = Answer.objects.get(content="world")
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps({"content": "asdf"}),
             HTTP_AUTHORIZATION=self.qwerty_token,
             content_type="application/json",
@@ -999,7 +1021,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         answer = Answer.objects.get(content="world")
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps({"content": "a" * 5001}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -1012,7 +1034,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         answer = Answer.objects.get(content="world")
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps({}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -1028,7 +1050,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         self.assertEqual(data["comment_count"], 0)
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps({"content": ""}),
             HTTP_AUTHORIZATION=self.eldpswp99_token,
             content_type="application/json",
@@ -1048,7 +1070,7 @@ class PutAnswerTestCase(PostPutAnswerTestCase):
         answer = Answer.objects.get(content="world")
 
         response = self.client.put(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             json.dumps(
                 {
                     # except content must be ignored
@@ -1095,12 +1117,12 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
     def test_delete_answer_answer_id_invalid_token(self):
         answer = Answer.objects.get(content="world")
 
-        response = self.client.delete(f"/answer/{answer.id}/")
+        response = self.client.delete(f"/api/answer/{answer.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.delete(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             HTTP_AUTHORIZATION="asdf",
         )
 
@@ -1109,7 +1131,7 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
 
     def test_put_answer_answer_id_invalid_id(self):
         response = self.client.delete(
-            f"/answer/-1/",
+            f"/api/answer/-1/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1119,7 +1141,7 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         answer = Answer.objects.get(content="world")
 
         response = self.client.delete(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -1130,7 +1152,7 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         answer = Answer.objects.get(content="world")
 
         response = self.client.delete(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1145,7 +1167,7 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         answer.save()
 
         response = self.client.delete(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1155,7 +1177,7 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         answer = Answer.objects.get(content="world")
 
         response = self.client.delete(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1164,7 +1186,7 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         self.assertEqual(answer.is_active, False)
 
         response = self.client.delete(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1180,7 +1202,7 @@ class DeleteAnswerTestCase(UserQuestionTestSetting):
         answer.save()
 
         response = self.client.delete(
-            f"/answer/{answer.id}/",
+            f"/api/answer/{answer.id}/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1220,12 +1242,12 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
     def test_post_answer_answer_id_accpetion_invalid_token(self):
         answer = Answer.objects.get(content="0")
 
-        response = self.client.post(f"/answer/{answer.id}/acception/")
+        response = self.client.post(f"/api/answer/{answer.id}/acception/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.post(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION="asdf",
         )
 
@@ -1235,7 +1257,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
 
     def test_post_answer_answer_id_acception_invalid_id(self):
         response = self.client.post(
-            f"/answer/-1/acception/",
+            f"/api/answer/-1/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1248,7 +1270,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         answer.save()
 
         response = self.client.post(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1259,7 +1281,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         answer = Answer.objects.get(content="0")
 
         response = self.client.post(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -1282,7 +1304,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         question_user_profile.save()
 
         response = self.client.post(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1295,7 +1317,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
 
         response = self.client.post(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1309,7 +1331,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         self.check_reputation(eldpswp99_reputation=2, qwerty_reputation=1249)
 
         response = self.client.post(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1327,7 +1349,7 @@ class PostAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
 
         response = self.client.post(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1368,12 +1390,12 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
     def test_delete_answer_answer_id_accpetion_invalid_token(self):
         answer = Answer.objects.get(content="0")
 
-        response = self.client.delete(f"/answer/{answer.id}/acception/")
+        response = self.client.delete(f"/api/answer/{answer.id}/acception/")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.delete(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION="asdf",
         )
 
@@ -1383,7 +1405,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
     def test_delete_answer_answer_id_acception_invalid_id(self):
         response = self.client.delete(
-            f"/answer/-1/acception/",
+            f"/api/answer/-1/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1396,7 +1418,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         answer.save()
 
         response = self.client.delete(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1407,7 +1429,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         answer = Answer.objects.get(content="0")
 
         response = self.client.delete(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.qwerty_token,
         )
 
@@ -1419,7 +1441,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         answer = Answer.objects.get(content="1")
 
         response = self.client.delete(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1432,7 +1454,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         question = answer.question
 
         response = self.client.delete(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1446,7 +1468,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
 
         self.check_reputation(eldpswp99_reputation=0, qwerty_reputation=1234)
         response = self.client.delete(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
@@ -1465,7 +1487,7 @@ class DeleteAcceptionTestCase(AnswerAcceptionTestCase):
         user_profile.save()
 
         response = self.client.delete(
-            f"/answer/{answer.id}/acception/",
+            f"/api/answer/{answer.id}/acception/",
             HTTP_AUTHORIZATION=self.eldpswp99_token,
         )
 
