@@ -189,7 +189,7 @@ class PostUserTestCase(UserTestSetting):
     def test_post_user_duplicated_value(self):
         # duplicated username
         response = self.client.post(
-            "/user/",
+            "/api/user/",
             json.dumps(
                 {
                     "username": "guzus",
@@ -204,7 +204,7 @@ class PostUserTestCase(UserTestSetting):
 
         # duplicated email
         response = self.client.post(
-            "/user/",
+            "/api/user/",
             json.dumps(
                 {
                     "username": "magnolia",
@@ -219,7 +219,7 @@ class PostUserTestCase(UserTestSetting):
 
         # duplicated nickname
         response = self.client.post(
-            "/user/",
+            "/api/user/",
             json.dumps(
                 {
                     "username": "magnolia",
@@ -237,7 +237,7 @@ class PostUserTestCase(UserTestSetting):
 
     def test_post_user_too_long_username(self):
         response = self.client.post(
-            "/user/",
+            "/api/user/",
             json.dumps(
                 {
                     "username": "a" * 20,
@@ -255,7 +255,7 @@ class PostUserTestCase(UserTestSetting):
 
     def test_post_user_incomplete_request(self):
         response = self.client.post(
-            "/user/",
+            "/api/user/",
             json.dumps(
                 {
                     "username": "magnolia",
@@ -272,7 +272,7 @@ class PostUserTestCase(UserTestSetting):
 
     def test_post_user(self):
         response = self.client.post(
-            "/user/",
+            "/api/user/",
             json.dumps(
                 {
                     "username": "magnolia",
@@ -316,7 +316,7 @@ class GetUserMeTestCase(UserTestSetting):
 
     def test_get_user_me_invalid_pk(self):
         response = self.client.get(
-            "/user/you/",
+            "/api/user/you/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -324,7 +324,7 @@ class GetUserMeTestCase(UserTestSetting):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         response = self.client.get(
-            "/user/100/",
+            "/api/user/100/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -333,7 +333,7 @@ class GetUserMeTestCase(UserTestSetting):
 
     def test_get_user_me_invalid_token(self):
         response = self.client.get(
-            "/user/me/",
+            "/api/user/me/",
             content_type="application/json",
         )
 
@@ -341,7 +341,7 @@ class GetUserMeTestCase(UserTestSetting):
 
     def test_get_user_me_deleted_user(self):
         response = self.client.get(
-            "/user/me/",
+            "/api/user/me/",
             HTTP_AUTHORIZATION=self.retired_guzus_token,
             content_type="application/json",
         )
@@ -350,7 +350,7 @@ class GetUserMeTestCase(UserTestSetting):
 
     def test_get_user_me(self):
         response = self.client.get(
-            "/user/me/",
+            "/api/user/me/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -366,7 +366,7 @@ class GetUserUserIDTestCase(UserTestSetting):
 
     def test_get_user_user_id_of_deleted_user(self):
         response = self.client.get(
-            f"/user/{self.retired_guzus.id}/",
+            f"/api/user/{self.retired_guzus.id}/",
             content_type="application/json",
         )
 
@@ -374,7 +374,7 @@ class GetUserUserIDTestCase(UserTestSetting):
 
     def test_get_user_user_id(self):
         response = self.client.get(
-            f"/user/{self.guzus.id}/",
+            f"/api/user/{self.guzus.id}/",
             content_type="application/json",
         )
 
@@ -383,7 +383,7 @@ class GetUserUserIDTestCase(UserTestSetting):
         self.check_guzus(data)
 
         response = self.client.get(
-            f"/user/{self.guzus.id}/",
+            f"/api/user/{self.guzus.id}/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -393,7 +393,7 @@ class GetUserUserIDTestCase(UserTestSetting):
         self.check_guzus(data)
 
         # response = self.client.get(
-        #     f"/user/{self.guzus.id}/",
+        #     f"/api/user/{self.guzus.id}/",
         #     HTTP_AUTHORIZATION=self.retired_guzus_token,
         #     content_type="application/json",
         # )
@@ -406,7 +406,7 @@ class GetUserUserIDTestCase(UserTestSetting):
         self.set_up_user_activites()
 
         response = self.client.get(
-            f"/user/{self.guzus.id}/",
+            f"/api/user/{self.guzus.id}/",
             content_type="application/json",
         )
 
@@ -415,7 +415,7 @@ class GetUserUserIDTestCase(UserTestSetting):
         self.check_guzus_after_activites(data)
 
         response = self.client.get(
-            f"/user/{self.eldpswp99.id}/",
+            f"/api/user/{self.eldpswp99.id}/",
             content_type="application/json",
         )
 
@@ -424,7 +424,7 @@ class GetUserUserIDTestCase(UserTestSetting):
         self.check_eldpswp99_after_activites(data)
 
         response = self.client.get(
-            f"/user/{self.YeonghyeonKo.id}/",
+            f"/api/user/{self.YeonghyeonKo.id}/",
             content_type="application/json",
         )
 
@@ -439,7 +439,7 @@ class PutUserMeTestCase(UserTestSetting):
 
     def test_put_user_me_invalid_pk(self):
         response = self.client.put(
-            "/user/you/",
+            "/api/user/you/",
             json.dumps({"password": "12345", "nickname": "Django"}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
@@ -448,7 +448,7 @@ class PutUserMeTestCase(UserTestSetting):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         response = self.client.put(
-            f"/user/{self.guzus.id}/",
+            f"/api/user/{self.guzus.id}/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -457,7 +457,7 @@ class PutUserMeTestCase(UserTestSetting):
 
     def test_put_user_me_invalid_token(self):
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps({"password": "12345", "nickname": "Django"}),
             content_type="application/json",
         )
@@ -465,7 +465,7 @@ class PutUserMeTestCase(UserTestSetting):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps({"password": "12345", "nickname": "Django"}),
             HTTP_AUTHORIZATION=self.retired_guzus_token,
             content_type="application/json",
@@ -475,7 +475,7 @@ class PutUserMeTestCase(UserTestSetting):
 
     def test_put_user_me_too_long_nickname(self):
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps({"password": "12345", "nickname": "n" * 17}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
@@ -485,7 +485,7 @@ class PutUserMeTestCase(UserTestSetting):
 
     def test_put_user_me_duplicated_nickname(self):
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps({"password": "12345", "nickname": "MyungHoon Park"}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
@@ -494,7 +494,7 @@ class PutUserMeTestCase(UserTestSetting):
 
     def test_put_user_me_same_used_nickname(self):
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps({"password": "12345", "nickname": "audrn31"}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
@@ -506,7 +506,7 @@ class PutUserMeTestCase(UserTestSetting):
 
     def test_put_user_me_try_change_username_or_email(self):
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps({"password": "12345", "username": "new_guzus"}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
@@ -515,7 +515,7 @@ class PutUserMeTestCase(UserTestSetting):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps({"password": "12345", "email": "new_guzus@naver.com"}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
@@ -525,7 +525,7 @@ class PutUserMeTestCase(UserTestSetting):
 
     def test_put_user_me(self):
         response = self.client.put(
-            "/user/me/",
+            "/api/user/me/",
             json.dumps(
                 {
                     "title": "hi",
@@ -563,7 +563,7 @@ class DeleteUserMeTestCase(UserTestSetting):
 
     def test_delete_user_me_invalid_pk(self):
         response = self.client.delete(
-            f"/user/{self.guzus.id}/",
+            f"/api/user/{self.guzus.id}/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -571,13 +571,13 @@ class DeleteUserMeTestCase(UserTestSetting):
 
     def test_delete_user_me_invalid_token(self):
         response = self.client.delete(
-            "/user/me/",
+            "/api/user/me/",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.delete(
-            "/user/me/",
+            "/api/user/me/",
             HTTP_AUTHORIZATION=self.retired_guzus_token,
             content_type="application/json",
         )
@@ -585,7 +585,7 @@ class DeleteUserMeTestCase(UserTestSetting):
 
     def test_delete_user_me(self):
         response = self.client.delete(
-            "/user/me/",
+            "/api/user/me/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -598,7 +598,7 @@ class PutUserLoginTestCase:
 
     def test_put_user_login_invalid_info(self):
         response = self.client.put(
-            "/user/login/",
+            "/api/user/login/",
             json.dumps({"username": "guzus", "password": "wrong_password"}),
             content_type="application/json",
         )
@@ -607,7 +607,7 @@ class PutUserLoginTestCase:
 
     def test_put_user_login_deleted_user(self):
         response = self.client.put(
-            "/user/login/",
+            "/api/user/login/",
             json.dumps({"username": "retired_guzus", "password": "password"}),
             content_type="application/json",
         )
@@ -616,7 +616,7 @@ class PutUserLoginTestCase:
 
     def test_put_user_login_too_long_username(self):
         response = self.client.put(
-            "/user/login/",
+            "/api/user/login/",
             json.dumps({"username": "1" * 17, "password": "password"}),
             content_type="application/json",
         )
@@ -625,7 +625,7 @@ class PutUserLoginTestCase:
 
     def test_put_user_login(self):
         response = self.client.put(
-            "/user/login/",
+            "/api/user/login/",
             json.dumps({"username": "guzus", "password": "password"}),
             content_type="application/json",
         )
@@ -643,7 +643,7 @@ class PostUserLogoutTestCase(UserTestSetting):
 
     def test_post_user_logout_invalid_token(self):
         response = self.client.post(
-            "/user/logout/",
+            "/api/user/logout/",
             content_type="application/json",
         )
 
@@ -651,7 +651,7 @@ class PostUserLogoutTestCase(UserTestSetting):
 
     def test_put_user_logout(self):
         response = self.client.post(
-            "/user/logout/",
+            "/api/user/logout/",
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
