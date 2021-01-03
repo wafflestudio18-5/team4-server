@@ -130,6 +130,7 @@ class UserTestSetting(TestCase):
         self.assertEqual(data["question_count"], 0)
         self.assertEqual(data["answer_count"], 0)
         self.assertEqual(data["bookmark_count"], 0)
+        self.assertEqual(data["tag_count"], 0)
 
     def check_guzus_after_activites(self, data):
         self.assertIn("id", data)
@@ -146,6 +147,7 @@ class UserTestSetting(TestCase):
         self.assertEqual(data["question_count"], self.guzus_QUESTION_COUNT)
         self.assertEqual(data["answer_count"], 0)
         self.assertEqual(data["bookmark_count"], 0)
+        self.assertEqual(data["tag_count"], 0)
 
     def check_eldpswp99_after_activites(self, data):
         self.assertIn("id", data)
@@ -162,6 +164,7 @@ class UserTestSetting(TestCase):
         self.assertEqual(data["question_count"], 0)
         self.assertEqual(data["answer_count"], self.eldpswp99_ANSWER_COUNT)
         self.assertEqual(data["bookmark_count"], 0)
+        self.assertEqual(data["tag_count"], 0)
 
     def check_YeonghyeonKo_after_activites(self, data):
         self.assertIn("id", data)
@@ -178,6 +181,7 @@ class UserTestSetting(TestCase):
         self.assertEqual(data["question_count"], 0)
         self.assertEqual(data["answer_count"], 0)
         self.assertEqual(data["bookmark_count"], self.YeonghyeonKo_BOOKMARK_COUNT)
+        self.assertEqual(data["tag_count"], 0)
 
 
 class PostUserTestCase(UserTestSetting):
@@ -301,6 +305,7 @@ class PostUserTestCase(UserTestSetting):
         self.assertEqual(data["question_count"], 0)
         self.assertEqual(data["answer_count"], 0)
         self.assertEqual(data["bookmark_count"], 0)
+        self.assertEqual(data["tag_count"], 0)
 
         user_count = User.objects.count()
         self.assertEqual(user_count, 2)
@@ -555,6 +560,7 @@ class PutUserMeTestCase(UserTestSetting):
         self.assertEqual(data["question_count"], 0)
         self.assertEqual(data["answer_count"], 0)
         self.assertEqual(data["bookmark_count"], 0)
+        self.assertEqual(data["tag_count"], 0)
 
 
 class DeleteUserMeTestCase(UserTestSetting):
