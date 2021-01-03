@@ -5,11 +5,11 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("answer.urls")),
-    path("", include("question.urls")),
-    path("", include("comment.urls")),
-    path("", include("user.urls")),
-    path("", include("bookmark.urls")),
-    path("", include("rate.urls")),
-    path("", include("tag.urls")),
+    path("api/", include("answer.urls")),
+    path("api/", include("question.urls")),
+    path("api/", include("comment.urls")),
+    path("api/", include("user.urls")),
+    path("api/", include("bookmark.urls")),
+    path("api/", include("rate.urls")),
+    path("api/", include("tag.urls")),
 ] + static(settings.MEDIA_LOCATION, document_root=settings.MEDIA_ROOT)

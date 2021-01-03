@@ -6,6 +6,7 @@ from django.db import transaction
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from user.serializers import (
     UserSerializer,
     UserProfileSerializer,
@@ -77,8 +78,6 @@ class UserViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        login(request, user)
-
         data = UserProfileSerializer(user.profile).data
         data["token"] = user.auth_token.key
         return Response(data, status=status.HTTP_201_CREATED)
@@ -106,8 +105,6 @@ class UserViewSet(viewsets.GenericViewSet):
                     status=status.HTTP_403_FORBIDDEN,
                 )
         if user and user.is_active:
-            login(request, user)
-
             data = self.get_serializer(user.profile).data
             token, created = Token.objects.get_or_create(user=user)
             data["token"] = token.key
@@ -119,8 +116,13 @@ class UserViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["POST"])
     def logout(self, request):
-        logout(request)
-        return Response()
+        try:
+            request.user.auth_token.delete()
+        except (AttributeError, ObjectDoesNotExist):
+            return Response(
+                {"message:token not exist"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response({})
 
     def retrieve(self, request, pk=None):
         if pk == "me":
@@ -203,7 +205,12 @@ class UserListViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        return Response({"users": self.get_serializer(users, many=True).data})
+        return Response(
+            {
+                "users": self.get_serializer(users, many=True).data,
+                "user_count": User.objects.filter(is_active=True).count(),
+            }
+        )
 
 
 def sort_users(request, users):

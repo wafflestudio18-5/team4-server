@@ -7,6 +7,7 @@ from django.shortcuts import redirect
 from django.core.paginator import Paginator, EmptyPage
 from django.db import transaction
 
+from tag.serializers import TagUserSerializer
 from django.contrib.auth.models import User
 from tag.models import UserTag
 from question.models import Question, QuestionTag
@@ -228,14 +229,17 @@ class AnswerViewSet(viewsets.GenericViewSet):
 
                 question = answer.question
                 question_tags = QuestionTag.objects.filter(question=question)
+                answer.is_active = False
+                answer.save()
                 for question_tag in question_tags:
                     user_tag = UserTag.objects.get(
                         user=request.user, tag=question_tag.tag
                     )
-                    user_tag.score -= answer.vote
-                    user_tag.save()
-                answer.is_active = False
-                answer.save()
+                    if TagUserSerializer().get_posts(user_tag) == 0:
+                        user_tag.delete()
+                    else:
+                        user_tag.score -= answer.vote
+                        user_tag.save()
         except (Answer.DoesNotExist, ValueError):
             return Response(
                 {"message": "There is no answer with the given ID"},
