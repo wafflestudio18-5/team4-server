@@ -80,7 +80,14 @@ class QuestionViewSet(viewsets.GenericViewSet):
             )
         question.view_count += 1
         question.save()
-        return Response(QuestionInfoSerializer(question).data)
+        if request.user.is_authenticated:
+            return Response(
+                self.get_serializer(
+                    question, context=self.get_serializer_context()
+                ).data
+            )
+        else:
+            return Response(QuestionInfoSerializer(question).data)
 
     def update(self, request, pk=None):
         try:

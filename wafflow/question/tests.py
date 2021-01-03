@@ -114,6 +114,7 @@ class QuestionInfoTestCase(QuestionTestSetting):
         self.assertIn("title", data)
         self.assertIn("content", data)
         self.assertIn("vote", data)
+        self.assertIn("rating", data)
         self.assertIn("has_accepted", data)
         self.assertIsNotNone(data.get("author"))
         self.assertIn("id", author)
@@ -141,7 +142,7 @@ class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
     def test_get_question_question_id(self):
         question = Question.objects.get(title="hello1")
 
-        response = self.client.get(f"/question/{question.id}/")
+        response = self.client.get(f"/api/question/{question.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -157,10 +158,10 @@ class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
     def test_get_question_wrong_question_id_(self):
-        response = self.client.get(f"/question/-1/")
+        response = self.client.get(f"/api/question/-1/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        response = self.client.get(f"/question/99999/")
+        response = self.client.get(f"/api/question/99999/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -169,7 +170,7 @@ class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
         question.is_active = False
         question.save()
 
-        response = self.client.get(f"/question/{question.id}/")
+        response = self.client.get(f"/api/question/{question.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.check_db_count()
 
@@ -186,7 +187,7 @@ class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
                 content="b" * (loop_count + 1),
             )
 
-        response = self.client.get(f"/question/{question.id}/")
+        response = self.client.get(f"/api/question/{question.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         data = response.json()
@@ -202,7 +203,7 @@ class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
         comment.is_active = False
         comment.save()
 
-        response = self.client.get(f"/question/{question.id}/")
+        response = self.client.get(f"/api/question/{question.id}/")
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(data["comment_count"], 2)
@@ -219,17 +220,36 @@ class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
         question2.vote = 2
         question2.save()
 
-        response = self.client.get(f"/question/{question2.id}/")
+        """Anonymous user의 경우"""
+        response = self.client.get(f"/api/question/{question2.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         data = response.json()
         author = data["author"]
         self.assert_in_question_info(data)
         self.assertEqual(data["content"], "I don't know2")
         self.assertEqual(data["vote"], 2)
         self.assertEqual(data["has_accepted"], False)
+        self.assertEqual(data["rating"], 0)
+        self.assertEqual(data["view_count"], 1)
         self.assertEqual(author["nickname"], "yh2")
+        self.assertEqual(Question.objects.all().count(), 3)
+        self.assertEqual(UserQuestion.objects.all().count(), 2)
+        self.check_db_count(user_question_count=2)
 
+        """user의 경우"""
+        response = self.client.get(
+            f"/api/question/{question2.id}/", HTTP_AUTHORIZATION=self.kyh1_token
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        author = data["author"]
+        self.assert_in_question_info(data)
+        self.assertEqual(data["content"], "I don't know2")
+        self.assertEqual(data["vote"], 2)
+        self.assertEqual(data["has_accepted"], False)
+        self.assertEqual(data["rating"], 1)
+        self.assertEqual(data["view_count"], 2)
+        self.assertEqual(author["nickname"], "yh2")
         self.assertEqual(Question.objects.all().count(), 3)
         self.assertEqual(UserQuestion.objects.all().count(), 2)
         self.check_db_count(user_question_count=2)
@@ -243,27 +263,26 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
         self.set_up_questions()
 
     def test_get_question_user_invalid_user_id(self):
-        response = self.client.get(f"/question/user/-1/")
+        response = self.client.get(f"/api/question/user/-1/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_get_question_user_user_id_sorted_by_views(self):
         user2 = User.objects.get(username="kyh2")
-        response = self.client.get(f"/question/user/{user2.id}/?sorted_by=views&page=1")
+        response = self.client.get(
+            f"/api/question/user/{user2.id}/?sorted_by=views&page=1"
+        )
 
         data = response.json()
         if data.get("questions"):
             for question in data["questions"]:
                 self.assert_in_question_info_except_author_and_content(question)
                 self.assertEqual(question["view_count"], 0)
-
-                for view_count in range(question["id"]):
-                    response = self.client.get(f"/question/{question['id']}/")
-                data = response.json()
-                self.assertEqual(data["id"], question["id"])
-                self.assertEqual(data["view_count"], question["id"])
+                viewed_question = Question.objects.get(id=question["id"])
+                viewed_question.view_count = question["id"]
+                viewed_question.save()
 
             response = self.client.get(
-                f"/question/user/{user2.id}/?sorted_by=views&page=1"
+                f"/api/question/user/{user2.id}/?sorted_by=views&page=1"
             )
             data = response.json()
             self.assertIsNotNone(data.get("questions"))
@@ -273,7 +292,9 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
 
     def test_get_question_user_user_id_sorted_by_votes(self):
         user2 = User.objects.get(username="kyh2")
-        response = self.client.get(f"/question/user/{user2.id}/?sorted_by=votes&page=1")
+        response = self.client.get(
+            f"/api/question/user/{user2.id}/?sorted_by=votes&page=1"
+        )
         data = response.json()
         if data.get("questions"):
             self.assertEqual(data["questions"][0]["vote"], data["questions"][1]["vote"])
@@ -287,7 +308,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
                 question_change_vote.save()
 
             response = self.client.get(
-                f"/question/user/{user2.id}/?sorted_by=votes&page=1"
+                f"/api/question/user/{user2.id}/?sorted_by=votes&page=1"
             )
             data = response.json()
             self.assertIsNotNone(data.get("questions"))
@@ -299,7 +320,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
     def test_get_question_user_user_id_sorted_by_activity(self):
         user2 = User.objects.get(username="kyh2")
         response = self.client.get(
-            f"/question/user/{user2.id}/?sorted_by=activity&page=1"
+            f"/api/question/user/{user2.id}/?sorted_by=activity&page=1"
         )
         data = response.json()
         if data.get("questions"):
@@ -315,7 +336,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
             question_change_acivity.save()
 
             response = self.client.get(
-                f"/question/user/{user2.id}/?sorted_by=activity&page=1"
+                f"/api/question/user/{user2.id}/?sorted_by=activity&page=1"
             )
             data = response.json()
             self.assertIsNotNone(data.get("questions"))
@@ -329,7 +350,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
     def test_get_question_user_user_id_sorted_by_newest(self):
         user2 = User.objects.get(username="kyh2")
         response = self.client.get(
-            f"/question/user/{user2.id}/?sorted_by=newest&page=1"
+            f"/api/question/user/{user2.id}/?sorted_by=newest&page=1"
         )
         data = response.json()
         if data.get("questions"):
@@ -350,49 +371,49 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
     def test_get_question_tags_invalid_request(self):
         tags = "github"
         response = self.client.get(
-            f"/question/tagged/?tags={tags}/",
+            f"/api/question/tagged/?tags={tags}/",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/tagged/?tags={tags}&sorted_by=&page=1",
+            f"/api/question/tagged/?tags={tags}&sorted_by=&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/tagged/?tags={tags}&page=1",
+            f"/api/question/tagged/?tags={tags}&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/tagged/?tags={tags}&sorted_by=1",
+            f"/api/question/tagged/?tags={tags}&sorted_by=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/tagged/?tags={tags}&sorted_by=votes&page=1",
+            f"/api/question/tagged/?tags={tags}&sorted_by=votes&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/tagged/?tags={tags}&sorted_by=most_votes&page=asdf",
+            f"/api/question/tagged/?tags={tags}&sorted_by=most_votes&page=asdf",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/tagged/?tags={tags}&sorted_by=most_votes&page=-1",
+            f"/api/question/tagged/?tags={tags}&sorted_by=most_votes&page=-1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -400,7 +421,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
 
     def test_get_question_tags_sorted_by_most_frequent(self):
         response = self.client.get(
-            f"/question/tagged/?tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/tagged/?tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -411,14 +432,15 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
                 self.assert_in_question_info(question)
                 self.assertEqual(question["view_count"], 0)
 
-                for view_count in range(question["id"]):
-                    response = self.client.get(f"/question/{question['id']}/")
-                data = response.json()
-                self.assertEqual(data["id"], question["id"])
-                self.assertEqual(data["view_count"], question["id"])
+                for question in data["questions"]:
+                    self.assert_in_question_info(question)
+                    self.assertEqual(question["view_count"], 0)
+                    viewed_question = Question.objects.get(id=question["id"])
+                    viewed_question.view_count = question["id"]
+                    viewed_question.save()
 
             response = self.client.get(
-                f"/question/tagged/?tags=&sorted_by=most_frequent&page=1",
+                f"/api/question/tagged/?tags=&sorted_by=most_frequent&page=1",
                 content_type="application/json",
             )
             data = response.json()
@@ -429,7 +451,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
 
     def test_get_question_tags_sorted_by_most_votes(self):
         response = self.client.get(
-            f"/question/tagged/?tags=&sorted_by=most_votes&page=1",
+            f"/api/question/tagged/?tags=&sorted_by=most_votes&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -447,7 +469,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
                 question_change_vote.save()
 
             response = self.client.get(
-                f"/question/tagged/?tags=&sorted_by=most_votes&page=1",
+                f"/api/question/tagged/?tags=&sorted_by=most_votes&page=1",
                 content_type="application/json",
             )
             data = response.json()
@@ -459,7 +481,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
 
     def test_get_question_tags_sorted_by_newest(self):
         response = self.client.get(
-            f"/question/tagged/?tags=&sorted_by=newest&page=1",
+            f"/api/question/tagged/?tags=&sorted_by=newest&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -474,7 +496,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
 
     def test_get_question_tags_sorted_by_recent_activity(self):
         response = self.client.get(
-            f"/question/tagged/?tags=&sorted_by=recent_activity&page=1",
+            f"/api/question/tagged/?tags=&sorted_by=recent_activity&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -493,7 +515,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
             question_change_acivity.save()
 
             response = self.client.get(
-                f"/question/tagged/?tags=&sorted_by=recent_activity&page=1",
+                f"/api/question/tagged/?tags=&sorted_by=recent_activity&page=1",
             )
             data = response.json()
             self.assertIsNotNone(data.get("questions"))
@@ -506,7 +528,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
 
     def test_get_question_tags_filter_by_none(self):
         response = self.client.get(
-            f"/question/tagged/?tags=&sorted_by=newest&page=1",
+            f"/api/question/tagged/?tags=&sorted_by=newest&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -514,7 +536,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
 
     def test_get_question_tags_filter_by_no_answer(self):
         response = self.client.get(
-            f"/question/tagged/?tags=&sorted_by=newest&filter_by=no_answer&page=1",
+            f"/api/question/tagged/?tags=&sorted_by=newest&filter_by=no_answer&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -532,7 +554,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
             answer_count += 1
 
         response = self.client.get(
-            f"/question/tagged/?tags=&sorted_by=newest&filter_by=no_answer&page=1",
+            f"/api/question/tagged/?tags=&sorted_by=newest&filter_by=no_answer&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -543,7 +565,7 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
     def test_get_question_tags_filter_by_no_accepted_answer(self):
         tags = "github+react+typescript"
         response = self.client.get(
-            f"/question/tagged/?tags={tags}&sorted_by=newest&filter_by=no_accepted_answer&page=1",
+            f"/api/question/tagged/?tags={tags}&sorted_by=newest&filter_by=no_accepted_answer&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -559,14 +581,14 @@ class GetQuestionTagsCase(QuestionInfoTestCase):
                     question=question,
                     user=self.kyh1,
                 )
-                answer = Answer.objects.filter(user=self.kyh1).last()
+                answer = Answer.objects.get(user=self.kyh1)
                 answer.is_accepted = True
                 answer.save()
-                question = Question.objects.filter(id=answer.question_id).last()
+                question = Question.objects.get(id=answer.question_id)
                 question.has_accepted = True
                 question.save()
             response = self.client.get(
-                f"/question/tagged/?tags={tags}&sorted_by=newest&filter_by=no_accepted_answer&page=1",
+                f"/api/question/tagged/?tags={tags}&sorted_by=newest&filter_by=no_accepted_answer&page=1",
                 content_type="application/json",
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -585,49 +607,49 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_invalid_request(self):
         keywords = "know"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}/",
+            f"/api/question/search/keywords/?keywords={keywords}/",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&sorted_by=&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&sorted_by=&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&sorted_by=1",
+            f"/api/question/search/keywords/?keywords={keywords}&sorted_by=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&sorted_by=votes&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&sorted_by=votes&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&sorted_by=most_votes&page=asdf",
+            f"/api/question/search/keywords/?keywords={keywords}&sorted_by=most_votes&page=asdf",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.check_db_count()
 
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&sorted_by=most_votes&page=-1",
+            f"/api/question/search/keywords/?keywords={keywords}&sorted_by=most_votes&page=-1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -636,7 +658,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_sorted_by_most_frequent(self):
         keywords = "know+spark"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -647,14 +669,15 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
                 self.assert_in_question_info(question)
                 self.assertEqual(question["view_count"], 0)
 
-                for view_count in range(question["id"]):
-                    response = self.client.get(f"/question/{question['id']}/")
-                data = response.json()
-                self.assertEqual(data["id"], question["id"])
-                self.assertEqual(data["view_count"], question["id"])
+                for question in data["questions"]:
+                    self.assert_in_question_info(question)
+                    self.assertEqual(question["view_count"], 0)
+                    viewed_question = Question.objects.get(id=question["id"])
+                    viewed_question.view_count = question["id"]
+                    viewed_question.save()
 
             response = self.client.get(
-                f"/question/search/keywords/?keywords={keywords}&sorted_by=most_frequent&page=1",
+                f"/api/question/search/keywords/?keywords={keywords}&sorted_by=most_frequent&page=1",
                 content_type="application/json",
             )
             data = response.json()
@@ -666,7 +689,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_sorted_by_most_votes(self):
         keywords = "know+spark"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -684,7 +707,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
                 question_change_vote.save()
 
             response = self.client.get(
-                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+                f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
                 content_type="application/json",
             )
             data = response.json()
@@ -697,7 +720,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_sorted_by_newest(self):
         keywords = "know+spark"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -713,7 +736,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_sorted_by_recent_activity(self):
         keywords = "know+spark"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -732,7 +755,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
             question_change_acivity.save()
 
             response = self.client.get(
-                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+                f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
                 content_type="application/json",
             )
             data = response.json()
@@ -747,7 +770,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_filter_by_none(self):
         keywords = "know+spark"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -756,7 +779,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_filter_by_no_answer(self):
         keywords = "know+spark"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -774,7 +797,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
             answer_count += 1
 
             response = self.client.get(
-                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+                f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
                 content_type="application/json",
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -785,7 +808,7 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
     def test_get_question_keywords_filter_by_no_accepted_answer(self):
         keywords = "know+spark"
         response = self.client.get(
-            f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+            f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -801,14 +824,14 @@ class GetQuestionSearchKeywordsCase(QuestionInfoTestCase):
                     question=question,
                     user=self.kyh1,
                 )
-                answer = Answer.objects.filter(user=self.kyh1).last()
+                answer = Answer.objects.get(user=self.kyh1)
                 answer.is_accepted = True
                 answer.save()
-                question = Question.objects.filter(id=answer.question_id).last()
+                question = Question.objects.get(id=answer.question_id)
                 question.has_accepted = True
                 question.save()
             response = self.client.get(
-                f"/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
+                f"/api/question/search/keywords/?keywords={keywords}&tags=&sorted_by=most_frequent&page=1",
                 content_type="application/json",
             )
             self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -826,7 +849,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
 
     def test_post_question_invalid_token(self):
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             content_type="application/json",
         )
@@ -834,7 +857,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             HTTP_AUTHORIZATION="asdf",
             content_type="application/json",
@@ -844,7 +867,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
 
     def test_post_question_invalid_request(self):
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
@@ -852,7 +875,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"title": "hello4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -861,7 +884,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -870,7 +893,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"title": ""}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -879,7 +902,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"content": ""}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -889,7 +912,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
 
     def test_post_question_too_long_title(self):
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"title": "h" * 201, "content": "a"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -899,7 +922,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
 
     def test_post_question_too_long_content(self):
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"title": "hello4", "content": "a" * 5001}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -909,7 +932,7 @@ class PostQuestionTestCase(QuestionInfoTestCase):
 
     def test_post_question(self):
         response = self.client.post(
-            f"/question/",
+            f"/api/question/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -931,7 +954,7 @@ class PutQuestionTestCase(QuestionInfoTestCase):
 
     def test_put_question_invalid_request(self):
         response = self.client.put(
-            f"/question/-1/",
+            f"/api/question/-1/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -941,7 +964,7 @@ class PutQuestionTestCase(QuestionInfoTestCase):
 
         question_last = Question.objects.all().last()
         response = self.client.put(
-            f"/question/{question_last.id+1}/",
+            f"/api/question/{question_last.id+1}/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -951,7 +974,7 @@ class PutQuestionTestCase(QuestionInfoTestCase):
 
         user_question_last = self.kyh1.questions.last()
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh2_token,
             content_type="application/json",
@@ -960,7 +983,7 @@ class PutQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             content_type="application/json",
         )
@@ -968,7 +991,7 @@ class PutQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"title": "a" * 201, "content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -977,7 +1000,7 @@ class PutQuestionTestCase(QuestionInfoTestCase):
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"title": "hello4", "content": "a" * 5001}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
@@ -988,55 +1011,79 @@ class PutQuestionTestCase(QuestionInfoTestCase):
     def test_put_question(self):
         user_question_last = self.kyh1.questions.last()
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
-            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            f"/api/question/{user_question_last.id}/",
+            json.dumps({"title": "hello444", "content": "I don't know44"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
+        data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            [data["title"], data["content"]], ["hello444", "I don't know44"]
+        )
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"title": "", "content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
+        data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            [data["title"], data["content"]], ["hello444", "I don't know4"]
+        )
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"title": "hello4", "content": ""}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
+        data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            [data["title"], data["content"]], ["hello4", "I don't know4"]
+        )
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"title": "hello4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
+        data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            [data["title"], data["content"]], ["hello4", "I don't know4"]
+        )
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({"content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
+        data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            [data["title"], data["content"]], ["hello4", "I don't know4"]
+        )
         self.check_db_count()
 
         response = self.client.put(
-            f"/question/{user_question_last.id}/",
+            f"/api/question/{user_question_last.id}/",
             json.dumps({}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
+        data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            [data["title"], data["content"]], ["hello4", "I don't know4"]
+        )
         self.check_db_count()
