@@ -45,7 +45,7 @@ class QuestionsUserSerializer(SimpleQuestionUserSerializer):
         fields = ("questions",)
 
     def get_questions(self, questions):
-        return SimpleQuestionUserSerializer(questions, many=True).data
+        return QuestionInfoSerializer(questions, many=True).data
 
 
 class QuestionSerializer(SimpleQuestionUserSerializer):
