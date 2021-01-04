@@ -509,19 +509,10 @@ class PutUserMeTestCase(UserTestSetting):
         data = response.json()
         self.check_guzus(data)
 
-    def test_put_user_me_try_change_username_or_email(self):
+    def test_put_user_me_try_change_username(self):
         response = self.client.put(
             "/api/user/me/",
             json.dumps({"password": "12345", "username": "new_guzus"}),
-            HTTP_AUTHORIZATION=self.guzus_token,
-            content_type="application/json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        response = self.client.put(
-            "/api/user/me/",
-            json.dumps({"password": "12345", "email": "new_guzus@naver.com"}),
             HTTP_AUTHORIZATION=self.guzus_token,
             content_type="application/json",
         )
@@ -537,6 +528,7 @@ class PutUserMeTestCase(UserTestSetting):
                     "intro": "I'm waffle",
                     "password": "12345",
                     "nickname": "new_audrn31",
+                    "email": "eldpswp99@snu.ac.kr",
                 }
             ),
             HTTP_AUTHORIZATION=self.guzus_token,
@@ -550,7 +542,7 @@ class PutUserMeTestCase(UserTestSetting):
         self.assertEqual(data["username"], "guzus")
         self.assertIn("created_at", data)
         self.assertIn("updated_at", data)
-        self.assertEqual(data["email"], "guzus@naver.com")
+        self.assertEqual(data["email"], "eldpswp99@snu.ac.kr")
         self.assertIn("last_login", data)
         self.assertEqual(data["nickname"], "new_audrn31")
         self.assertIn("picture", data)
