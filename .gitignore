@@ -133,3 +133,7 @@ media/
 # Secret_info
 secret_info.json
 
+.DS_Store
+.zshrc
+.vscode
+
