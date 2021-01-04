@@ -80,7 +80,14 @@ class QuestionViewSet(viewsets.GenericViewSet):
             )
         question.view_count += 1
         question.save()
-        return Response(QuestionInfoSerializer(question).data)
+        if request.user.is_authenticated:
+            return Response(
+                self.get_serializer(
+                    question, context=self.get_serializer_context()
+                ).data
+            )
+        else:
+            return Response(QuestionInfoSerializer(question).data)
 
     def update(self, request, pk=None):
         try:
@@ -286,7 +293,10 @@ def sort_user_questions(request, questions):
 
 def paginate_objects(request, objects, object_per_page):
     page = request.query_params.get("page")
-
+    try:
+        page = int(page)
+    except ValueError:
+        return None
     if page is None:
         return None
     paginator = Paginator(objects, object_per_page)
