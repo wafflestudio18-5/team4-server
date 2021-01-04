@@ -23,4 +23,4 @@ class AnswerAdmin(admin.ModelAdmin):
         "is_active",
     )
     list_filter = ["created_at", "is_accepted", "updated_at", "vote", "is_active"]
-    search_fields = ["content"]
+    search_fields = ["content", "question__title", "question__content"]
