@@ -24,7 +24,7 @@ class UserCommentInline(admin.TabularInline):
     model = UserComment
 
 
-class UserProfileAdmin(UserAdmin):
+class UserProfileAdmin(admin.ModelAdmin):
     fieldsets = (
         ("Personal info", {"fields": ("username", "email", "password")}),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
