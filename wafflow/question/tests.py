@@ -121,16 +121,6 @@ class QuestionInfoTestCase(QuestionTestSetting):
         self.assertIn("nickname", author)
         self.assertIn("reputation", author)
 
-    def assert_in_question_info_except_author_and_content(self, data):
-        self.assertIn("id", data)
-        self.assertIn("created_at", data)
-        self.assertIn("updated_at", data)
-        self.assertIn("title", data)
-        self.assertIn("vote", data)
-        self.assertIn("has_accepted", data)
-        self.assertIsNone(data.get("author"))
-        self.assertIsNone(data.get("content"))
-
 
 class GetQuestionQuestionIdTestCase(QuestionInfoTestCase):
     client = Client()
@@ -275,7 +265,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
         data = response.json()
         if data.get("questions"):
             for question in data["questions"]:
-                self.assert_in_question_info_except_author_and_content(question)
+                self.assert_in_question_info(question)
                 self.assertEqual(question["view_count"], 0)
                 viewed_question = Question.objects.get(id=question["id"])
                 viewed_question.view_count = question["id"]
@@ -301,7 +291,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
             question1 = data["questions"][0]
 
             for question in data["questions"]:
-                self.assert_in_question_info_except_author_and_content(question)
+                self.assert_in_question_info(question)
                 self.assertEqual(question["vote"], 0)
                 question_change_vote = Question.objects.get(id=question["id"])
                 question_change_vote.vote = question["id"]
@@ -329,7 +319,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
             self.assertGreater(question1["updated_at"], question2["updated_at"])
 
             for question in data["questions"]:
-                self.assert_in_question_info_except_author_and_content(question)
+                self.assert_in_question_info(question)
 
             question_change_acivity = Question.objects.get(id=question2["id"])
             question_change_acivity.vote = 333
@@ -355,7 +345,7 @@ class GetQuestionUserUserIDTestCase(QuestionInfoTestCase):
         data = response.json()
         if data.get("questions"):
             for question in data["questions"]:
-                self.assert_in_question_info_except_author_and_content(question)
+                self.assert_in_question_info(question)
             self.assertGreater(
                 data["questions"][0]["created_at"], data["questions"][1]["created_at"]
             )
@@ -964,7 +954,7 @@ class PutQuestionTestCase(QuestionInfoTestCase):
 
         question_last = Question.objects.all().last()
         response = self.client.put(
-            f"/api/question/{question_last.id+1}/",
+            f"/api/question/{question_last.id + 1}/",
             json.dumps({"title": "hello4", "content": "I don't know4"}),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
