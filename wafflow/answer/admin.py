@@ -16,9 +16,10 @@ class AnswerAdmin(admin.ModelAdmin):
     list_display = (
         "content",
         "user",
-        "is_accepted",
-        "vote",
         "created_at",
+        "updated_at",
+        "vote",
+        "is_accepted",
         "is_active",
     )
     list_filter = ["created_at", "is_accepted", "updated_at", "vote", "is_active"]

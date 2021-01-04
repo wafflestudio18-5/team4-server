@@ -28,9 +28,10 @@ class QuestionAdmin(admin.ModelAdmin):
         "title",
         "user",
         "view_count",
-        "has_accepted",
-        "vote",
         "created_at",
+        "updated_at",
+        "vote",
+        "has_accepted",
         "is_active",
     )
     list_filter = ["created_at", "has_accepted", "vote", "is_active"]

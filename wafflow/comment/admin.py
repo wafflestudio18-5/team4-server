@@ -21,9 +21,9 @@ class CommentAdmin(admin.ModelAdmin):
     list_display = (
         "type",
         "user",
-        "vote",
         "created_at",
         "updated_at",
+        "vote",
         "is_active",
     )
     list_filter = ["created_at", "updated_at", "vote", "type"]

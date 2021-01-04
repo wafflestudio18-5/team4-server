@@ -25,6 +25,22 @@ class UserCommentInline(admin.TabularInline):
 
 
 class UserProfileAdmin(UserAdmin):
+    fieldsets = (
+        ("Personal info", {"fields": ("username", "email", "password")}),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+    )
     inlines = [
         UserProfileInline,
         UserQuestionInline,
