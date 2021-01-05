@@ -11,6 +11,7 @@ class UserAnswerInline(admin.TabularInline):
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):
     fieldsets = [(None, {"fields": ["user", "question", "content", "is_active"]})]
+    readonly_fields = ["user", "question", "content"]
     inlines = [
         UserAnswerInline,
     ]

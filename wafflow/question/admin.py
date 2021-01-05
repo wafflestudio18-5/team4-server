@@ -6,22 +6,23 @@ from answer.models import Answer
 
 class UserQuestionInline(admin.TabularInline):
     model = UserQuestion
-    readonly_fields = ["rating", "user", "bookmark_at"]
+    readonly_fields = ["rating", "user", "bookmark", "bookmark_at"]
 
 
 class QuestionTagInline(admin.TabularInline):
     model = QuestionTag
+    readonly_fields = ["tag"]
 
 
 class AnswerTagInline(admin.TabularInline):
     model = Answer
-    exclude = ["vote"]
-    readonly_fields = ["is_accepted"]
+    readonly_fields = ["content", "user", "is_accepted", "vote"]
 
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     fieldsets = [(None, {"fields": ["user", "title", "content", "is_active"]})]
+    readonly_fields = ["user", "title", "content"]
     inlines = [
         QuestionTagInline,
         UserQuestionInline,
@@ -44,6 +45,7 @@ class QuestionAdmin(admin.ModelAdmin):
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     fieldsets = [("Tag name", {"fields": ["name"]})]
+    readonly_fields = ["name"]
     list_display = ("name", "created_at")
     list_filter = ["created_at"]
     search_fields = ["name"]

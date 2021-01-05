@@ -10,22 +10,30 @@ from comment.models import UserComment
 
 class UserProfileInline(admin.TabularInline):
     model = UserProfile
-    readonly_fields = ["view_count", "reputation"]
+    readonly_fields = [
+        "view_count",
+        "reputation",
+        "nickname",
+        "intro",
+        "title",
+        "picture",
+        "github_id",
+    ]
 
 
 class UserQuestionInline(admin.TabularInline):
     model = UserQuestion
-    readonly_fields = ["rating", "user", "bookmark_at"]
+    readonly_fields = ["rating", "user", "bookmark", "bookmark_at", "question"]
 
 
 class UserAnswerInline(admin.TabularInline):
     model = UserAnswer
-    readonly_fields = ["rating", "user"]
+    readonly_fields = ["rating", "user", "answer"]
 
 
 class UserCommentInline(admin.TabularInline):
     model = UserComment
-    readonly_fields = ["rating", "user"]
+    readonly_fields = ["rating", "user", "comment"]
 
 
 class UserProfileAdmin(admin.ModelAdmin):
@@ -45,6 +53,17 @@ class UserProfileAdmin(admin.ModelAdmin):
             },
         ),
     )
+    readonly_fields = [
+        "username",
+        "email",
+        "password",
+        "last_login",
+        "date_joined",
+        "is_staff",
+        "is_superuser",
+        "groups",
+        "user_permissions",
+    ]
     inlines = [
         UserProfileInline,
         UserQuestionInline,

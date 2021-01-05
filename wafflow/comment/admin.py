@@ -16,6 +16,7 @@ class CommentAdmin(admin.ModelAdmin):
             {"fields": ["user", "type", "question", "answer", "content", "is_active"]},
         )
     ]
+    readonly_fields = ["user", "type", "question", "answer", "content"]
     inlines = [
         UserCommentInline,
     ]
