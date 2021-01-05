@@ -5,6 +5,7 @@ from .models import Comment, UserComment
 
 class UserCommentInline(admin.TabularInline):
     model = UserComment
+    readonly_fields = ["rating", "user"]
 
 
 @admin.register(Comment)

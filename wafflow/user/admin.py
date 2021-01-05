@@ -10,18 +10,22 @@ from comment.models import UserComment
 
 class UserProfileInline(admin.TabularInline):
     model = UserProfile
+    readonly_fields = ["view_count", "reputation"]
 
 
 class UserQuestionInline(admin.TabularInline):
     model = UserQuestion
+    readonly_fields = ["rating", "user", "bookmark_at"]
 
 
 class UserAnswerInline(admin.TabularInline):
     model = UserAnswer
+    readonly_fields = ["rating", "user"]
 
 
 class UserCommentInline(admin.TabularInline):
     model = UserComment
+    readonly_fields = ["rating", "user"]
 
 
 class UserProfileAdmin(admin.ModelAdmin):
@@ -56,7 +60,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         "is_active",
     )
     list_filter = ["is_staff", "is_active", "is_superuser"]
-    search_fields = ("username",)
+    search_fields = ("username", "email", "profile__nickname")
 
 
 admin.site.unregister(User)

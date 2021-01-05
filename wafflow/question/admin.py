@@ -6,6 +6,7 @@ from answer.models import Answer
 
 class UserQuestionInline(admin.TabularInline):
     model = UserQuestion
+    readonly_fields = ["rating", "user", "bookmark_at"]
 
 
 class QuestionTagInline(admin.TabularInline):
@@ -14,6 +15,8 @@ class QuestionTagInline(admin.TabularInline):
 
 class AnswerTagInline(admin.TabularInline):
     model = Answer
+    exclude = ["vote"]
+    readonly_fields = ["is_accepted"]
 
 
 @admin.register(Question)

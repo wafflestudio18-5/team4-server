@@ -5,6 +5,7 @@ from .models import Answer, UserAnswer
 
 class UserAnswerInline(admin.TabularInline):
     model = UserAnswer
+    readonly_fields = ["rating", "user"]
 
 
 @admin.register(Answer)
