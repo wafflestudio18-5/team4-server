@@ -52,11 +52,6 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("username is too long")
         return value
 
-    def validate_email(self, value):
-        if self.instance is not None:
-            raise serializers.ValidationError("changing email is not allowed")
-        return value
-
     def validate_password(self, value):
         return make_password(value)
 
@@ -79,7 +74,7 @@ class UserSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, user, validated_data):
         data = validated_data.copy()
-        pop_list = self.pop_list.copy() + ["username", "email"]
+        pop_list = self.pop_list.copy() + ["username"]
 
         for pop in pop_list:
             validated_data.pop(pop, None)
