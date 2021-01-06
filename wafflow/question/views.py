@@ -53,8 +53,7 @@ class QuestionViewSet(viewsets.GenericViewSet):
             question_serializer.is_valid(raise_exception=True)
             question = question_serializer.save()
 
-            raw_tags = data.get("tags")
-            tags = raw_tags.split("+") if raw_tags else None
+            tags = data.get("tags")
             if tags:
                 for tag in tags:
                     tag, created = Tag.objects.get_or_create(name=tag)

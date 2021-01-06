@@ -923,7 +923,13 @@ class PostQuestionTestCase(QuestionInfoTestCase):
     def test_post_question(self):
         response = self.client.post(
             f"/api/question/",
-            json.dumps({"title": "hello4", "content": "I don't know4"}),
+            json.dumps(
+                {
+                    "title": "hello4",
+                    "content": "I don't know4",
+                    "tags": ["C++", "python"],
+                }
+            ),
             HTTP_AUTHORIZATION=self.kyh1_token,
             content_type="application/json",
         )
@@ -932,7 +938,8 @@ class PostQuestionTestCase(QuestionInfoTestCase):
         self.assert_in_question_info(data)
         self.assertEqual(data["title"], "hello4")
         self.assertEqual(data["content"], "I don't know4")
-        self.check_db_count(question_count=4)
+        self.assertEqual(len(data["tags"]), 2)
+        self.check_db_count(question_count=4, tag_count=6, question_tag_count=8)
 
 
 class PutQuestionTestCase(QuestionInfoTestCase):
