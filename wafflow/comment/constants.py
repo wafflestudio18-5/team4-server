@@ -1,0 +1,1 @@
+COMMENT_PER_PAGE = 5

@@ -12,6 +12,8 @@ from comment.serializers import (
     CommentQuestionProduceSerializer,
 )
 from question.models import Question
+from question.views import paginate_objects
+from comment.constants import *
 
 
 class CommentViewSet(viewsets.GenericViewSet):
@@ -34,7 +36,12 @@ class CommentViewSet(viewsets.GenericViewSet):
                 {"error": "There is no comment with the given ID"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        return Response(self.get_serializer(comment).data)
+        if request.user.is_authenticated:
+            return Response(
+                self.get_serializer(comment, context=self.get_serializer_context()).data
+            )
+        else:
+            return Response(self.get_serializer(comment).data)
 
     def update(self, request, pk=None):
         try:
@@ -90,7 +97,7 @@ class CommentAnswerViewSet(viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         if self.action in ("retrieve",):
-            return CommentsSerializer
+            return CommentSerializer
         if self.action in ("make",):
             return CommentAnswerProduceSerializer
 
@@ -103,11 +110,31 @@ class CommentAnswerViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         comments = Comment.objects.filter(answer=answer, is_active=True)
-        return Response(
-            self.get_serializer(
-                comments, many=True, context=self.get_serializer_context()
-            ).data
-        )
+        paginate_comments = paginate_objects(request, comments, COMMENT_PER_PAGE)
+        if paginate_comments is None:
+            return Response(
+                {"error": "Invalid page"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if request.user.is_authenticated:
+            return Response(
+                {
+                    "comments": self.get_serializer(
+                        paginate_comments,
+                        many=True,
+                        context=self.get_serializer_context(),
+                    ).data
+                }
+            )
+        else:
+            return Response(
+                {
+                    "comments": self.get_serializer(
+                        paginate_comments,
+                        many=True,
+                    ).data
+                }
+            )
 
     def make(self, request, pk=None):
         try:
@@ -140,7 +167,7 @@ class CommentQuestionViewSet(viewsets.GenericViewSet):
 
     def get_serializer_class(self):
         if self.action in ("retrieve",):
-            return CommentsSerializer
+            return CommentSerializer
         if self.action in ("make",):
             return CommentQuestionProduceSerializer
 
@@ -153,9 +180,31 @@ class CommentQuestionViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         comments = Comment.objects.filter(question=question, is_active=True)
-        return Response(
-            self.get_serializer(comments, context=self.get_serializer_context()).data
-        )
+        paginate_comments = paginate_objects(request, comments, COMMENT_PER_PAGE)
+        if paginate_comments is None:
+            return Response(
+                {"error": "Invalid page"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if request.user.is_authenticated:
+            return Response(
+                {
+                    "comments": self.get_serializer(
+                        paginate_comments,
+                        many=True,
+                        context=self.get_serializer_context(),
+                    ).data
+                }
+            )
+        else:
+            return Response(
+                {
+                    "comments": self.get_serializer(
+                        paginate_comments,
+                        many=True,
+                    ).data
+                }
+            )
 
     def make(self, request, pk=None):
         try:
