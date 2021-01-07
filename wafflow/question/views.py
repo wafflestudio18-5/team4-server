@@ -295,7 +295,7 @@ def paginate_objects(request, objects, object_per_page):
     page = request.query_params.get("page")
     try:
         page = int(page)
-    except ValueError:
+    except (ValueError, TypeError):
         return None
     if page is None:
         return None
