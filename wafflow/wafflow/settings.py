@@ -39,10 +39,11 @@ DEBUG_TOOLBAR = os.getenv("DEBUG_TOOLBAR") in ("true", "True")
 # DEBUG = os.getenv('DEBUG') in ('true', 'True', 'TRUE')
 
 ALLOWED_HOSTS = [
-    ".amazonaws.com",
-    "localhost",
-    "127.0.0.1",
-    "13.209.15.197",  # Public IPv4 Address for AWS EC2 Instance
+    # ".amazonaws.com",
+    # "localhost",
+    #  "127.0.0.1",
+    # "13.209.15.197",  # Public IPv4 Address for AWS EC2 Instance
+    "*",
 ]
 
 # Application definition
@@ -76,8 +77,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
 ]
-CORS_ORIGIN_ALLOW_ALL = False
-CORS_ORIGIN_WHITELIST = ["http://localhost:8000", "http://localhost:3000"]
+CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ORIGIN_WHITELIST = ["http://localhost:8000", "http://localhost:3000"]
 
 
 REST_FRAMEWORK = {
