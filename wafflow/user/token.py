@@ -5,6 +5,7 @@ from user.constants import GITHUB_URL
 
 def get_github_data(github_token):
     headers = {
+        "Accept": "application/json;",
         "Content-Type": "application/json;",
         "Authorization": f"token {github_token}",
     }
