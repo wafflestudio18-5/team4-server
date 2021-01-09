@@ -53,13 +53,13 @@ class UserViewSet(viewsets.GenericViewSet):
             email=github_data.get("email", ""),
         )
         request_data = request.data.copy()
+        request_data["nickname"] = github_data["login"]
         request_data["github_id"] = github_id
         request_data["user_id"] = user.id
+        Token.objects.create(user=user)
         serializer = UserProfileProduceSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        login(request, user)
 
         data = UserProfileSerializer(user.profile).data
         data["token"] = user.auth_token.key
@@ -100,10 +100,7 @@ class UserViewSet(viewsets.GenericViewSet):
             try:
                 user = UserProfile.objects.get(github_id=github_data.get("id")).user
             except (UserProfile.DoesNotExist, AttributeError):
-                return Response(
-                    {"message": "Authentication failed"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+                return self.create_github_user(request)
         if user and user.is_active:
             data = self.get_serializer(user.profile).data
             token, created = Token.objects.get_or_create(user=user)
