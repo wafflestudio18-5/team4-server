@@ -36,7 +36,6 @@ class UserViewSet(viewsets.GenericViewSet):
     @transaction.atomic
     def create_github_user(self, request):
         github_data = get_github_data(request.data.get("github_token"))
-        print(github_data)
         if github_data is None or github_data.get("id") is None:
             return Response(
                 {"message": "Invalid github token"}, status=status.HTTP_400_BAD_REQUEST
